@@ -3,22 +3,148 @@ class StatsFormatter {
     this.api = api;
   }
 
-  getStarColor(stars) {
-    if (stars === undefined || stars === null) return "§7";
-    if (stars < 100) return "§7";
-    if (stars < 200) return "§f";
-    if (stars < 300) return "§6";
-    if (stars < 400) return "§b";
-    if (stars < 500) return "§2";
-    if (stars < 600) return "§3";
-    if (stars < 700) return "§4";
-    if (stars < 800) return "§d";
-    if (stars < 900) return "§9";
-    if (stars < 1000) return "§5";
+  formatMythicNumber(stars, colorPattern) {
+    const starStr = stars.toString();
+    const firstDigit = starStr.charAt(0);
+    const middleDigits = starStr.substring(1, starStr.length - 1);
+    const lastDigit = starStr.charAt(starStr.length - 1);
 
-    const prestige = Math.floor(stars / 1000);
-    const colors = ["§c", "§6", "§b", "§a", "§d", "§5", "§f", "§e", "§1", "§7"];
-    return colors[prestige - 1] || "§5";
+    return `${colorPattern[0]}${firstDigit}${colorPattern[1]}${middleDigits}${colorPattern[2]}${lastDigit}`;
+  }
+
+  getPrestigeTag(stars) {
+    const prestige = Math.floor(stars / 100);
+    let symbol;
+
+    if (stars < 1100) {
+      symbol = "✫";
+    } else if (stars < 2100) {
+      symbol = "✪";
+    } else {
+      symbol = "⚝";
+    }
+
+    // Prestiges 0-999
+    if (prestige < 10) {
+      const colors = [
+        "§7",
+        "§f",
+        "§6",
+        "§b",
+        "§2",
+        "§3",
+        "§4",
+        "§d",
+        "§9",
+        "§5",
+      ];
+      return `${colors[prestige]}[${stars}${symbol}]`;
+    }
+
+    // Prestiges 1000+
+    switch (prestige) {
+      case 10: {
+        return `§c[§6${stars.toString()[0]}§e${stars.toString()[1]}§a${
+          stars.toString()[2]
+        }§b${stars.toString()[3]}§d${symbol}§5]`;
+      }
+      case 11:
+        return `§7[§f${stars}§7${symbol}]`;
+      case 12:
+        return `§7[§e${stars}§6${symbol}§7]`;
+      case 13:
+        return `§7[§b${stars}§3${symbol}§7]`;
+      case 14:
+        return `§7[§a${stars}§2${symbol}§7]`;
+      case 15:
+        return `§7[§3${stars}§9${symbol}§7]`;
+      case 16:
+        return `§7[§c${stars}§4${symbol}§7]`;
+      case 17:
+        return `§7[§d${stars}§5${symbol}§7]`;
+      case 18:
+        return `§7[§9${stars}§1${symbol}§7]`;
+      case 19:
+        return `§7[§5${stars}§8${symbol}§7]`;
+
+      case 20:
+        return `§8[${this.formatMythicNumber(stars, [
+          "§7",
+          "§f",
+          "§7",
+        ])}${symbol}§8]`;
+      case 21:
+        return `§f[${this.formatMythicNumber(stars, [
+          "§f",
+          "§e",
+          "§6",
+        ])}${symbol}]`;
+      case 22:
+        return `§6[${this.formatMythicNumber(stars, [
+          "§6",
+          "§f",
+          "§b",
+        ])}${symbol}§3]`;
+      case 23:
+        return `§5[${this.formatMythicNumber(stars, [
+          "§5",
+          "§d",
+          "§6",
+        ])}${symbol}§e]`;
+      case 24:
+        return `§b[${this.formatMythicNumber(stars, [
+          "§b",
+          "§f",
+          "§7",
+        ])}${symbol}§8]`;
+      case 25:
+        return `§f[${this.formatMythicNumber(stars, [
+          "§f",
+          "§a",
+          "§2",
+        ])}${symbol}]`;
+      case 26:
+        return `§4[${this.formatMythicNumber(stars, [
+          "§4",
+          "§c",
+          "§d",
+        ])}${symbol}§5]`;
+      case 27:
+        return `§e[${this.formatMythicNumber(stars, [
+          "§e",
+          "§f",
+          "§8",
+        ])}${symbol}]`;
+      case 28:
+        return `§a[${this.formatMythicNumber(stars, [
+          "§a",
+          "§2",
+          "§6",
+        ])}${symbol}§e]`;
+      case 29:
+        return `§b[${this.formatMythicNumber(stars, [
+          "§b",
+          "§3",
+          "§9",
+        ])}${symbol}§1]`;
+      case 30:
+        return `§e[${this.formatMythicNumber(stars, [
+          "§e",
+          "§6",
+          "§c",
+        ])}${symbol}§4]`;
+
+      default:
+        // For any prestige above 3000, use the Fire prestige style
+        if (prestige > 30) {
+          return `§e[${this.formatMythicNumber(stars, [
+            "§e",
+            "§6",
+            "§c",
+          ])}${symbol}§4]`;
+        }
+        return `§f[${stars}${symbol}]`;
+    }
   }
 
   applyColor(field, value) {
@@ -70,10 +196,7 @@ class StatsFormatter {
       const formatStat = (value) =>
         value !== undefined && value !== null ? `${value}` : notFound;
 
-      const starsValue =
-        stats.stars !== undefined && stats.stars !== null
-          ? `${this.getStarColor(stats.stars)}[${stats.stars}✫]`
-          : notFound;
+      const starsValue = this.getPrestigeTag(stats.stars);
       parts.push(starsValue);
 
       const fkdrValue = `${this.applyColor(
@@ -105,7 +228,7 @@ class StatsFormatter {
       parts.push(`§cNicked`);
     } else {
       if (this.api.config.get("stats.showStars"))
-        parts.push(`${this.getStarColor(stats.stars)}[${stats.stars}✫]`);
+        parts.push(this.getPrestigeTag(stats.stars));
 
       if (this.api.config.get("stats.showFkdr")) {
         const fkdrColor = this.applyColor("fkdr", stats.fkdr);
