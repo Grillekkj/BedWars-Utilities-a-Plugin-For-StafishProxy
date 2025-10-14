@@ -69,14 +69,6 @@ class BedWarsUtilities {
         .description("Set your Polsu API key")
         .argument("<apikey>", { description: "Your Polsu API key" })
         .handler((ctx) => this.commandHandler.handleSetPolsuCommand(ctx));
-
-      registry
-        .command("setnick")
-        .description("Set your nick")
-        .argument("<nickname>", {
-          description: "Your nick",
-        })
-        .handler((ctx) => this.commandHandler.handleSetNickCommand(ctx));
     });
   }
 
