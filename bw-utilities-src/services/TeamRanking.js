@@ -31,7 +31,19 @@ class TeamRanking {
     return this.getTeamLetter(myTeam?.prefix);
   }
 
-  async processAndDisplayRanking(playerNames, tabManager) {
+  async processAndDisplayRanking(
+    playerNames,
+    tabManager,
+    isSolosMode,
+    rankingSent
+  ) {
+    if (!this.api.config.get("teamRanking.enabled")) {
+      playerNames.forEach((playerName) => {
+        tabManager.addPlayerStatsToTab(playerName);
+      });
+      return;
+    }
+
     this.api.chat(
       `${this.api.getPrefix()} §eAnalyzing ${playerNames.length} players...`
     );
@@ -53,7 +65,7 @@ class TeamRanking {
       myTeamLetter,
       tabManager
     );
-    await this.displayRanking(teamsData);
+    await this.displayRanking(teamsData, isSolosMode, rankingSent);
   }
 
   async collectTeamsData(playerNames, myTeamLetter, tabManager) {
@@ -93,7 +105,11 @@ class TeamRanking {
     return teamsData;
   }
 
-  async displayRanking(teamsData) {
+  async displayRanking(teamsData, isSolosMode, rankingSent) {
+    if (rankingSent) {
+      return;
+    }
+
     const sortedTeams = Object.entries(teamsData)
       .map(([letter, data]) => ({
         name: TEAM_MAP[letter]?.name || "Unknown",
@@ -114,20 +130,28 @@ class TeamRanking {
         team.totalStars
       } | FKDR: ${team.totalFkdr.toFixed(1)})`;
       if (index === 0) {
-        return `${teamInfo} <- TARGET (no crossmap unless they start)`;
+        const targetMessage = isSolosMode
+          ? "<- TARGET"
+          : "<- TARGET (no crossmap unless they start)";
+        return `${teamInfo} ${targetMessage}`;
       }
       return teamInfo;
     });
 
     const targetMessage = rankingParts.shift();
-    this.api.sendChatToServer(`/ac ${targetMessage}`);
+
+    if (isSolosMode) {
+      this.api.chat(targetMessage);
+    } else {
+      this.api.sendChatToServer(`/ac ${targetMessage}`);
+    }
 
     if (rankingParts.length > 0) {
-      this.sendRankingMessages(rankingParts);
+      this.sendRankingMessages(rankingParts, isSolosMode);
     }
   }
 
-  sendRankingMessages(rankingParts) {
+  sendRankingMessages(rankingParts, isSolosMode) {
     const messagesToSend = [];
     let currentMessage = "";
     const CHAT_LIMIT = 240;
@@ -154,7 +178,11 @@ class TeamRanking {
     for (let i = 0; i < messagesToSend.length; i++) {
       const msg = messagesToSend[i];
       setTimeout(() => {
-        this.api.sendChatToServer(`/ac ${msg}`);
+        if (isSolosMode) {
+          this.api.chat(msg);
+        } else {
+          this.api.sendChatToServer(`/ac ${msg}`);
+        }
       }, (i + 1) * 350);
     }
   }

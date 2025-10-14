@@ -28,11 +28,12 @@ class BedWarsUtilities {
       this.chatHandler
     );
     this.gameHandler = new GameHandler(api, this.chatHandler, this.tabManager);
-
     this.autoStatsMode = false;
     this.checkedPlayersInAutoMode = new Set();
     this.lastCleanMessage = null;
     this.requeueTriggered = false;
+    this.isSolosMode = false;
+    this.rankingSentThisMatch = false;
   }
 
   registerHandlers() {
@@ -125,6 +126,8 @@ class BedWarsUtilities {
     this.gameHandler.resetGameState();
     this.lastCleanMessage = null;
     this.requeueTriggered = false;
+    this.isSolosMode = false;
+    this.rankingSentThisMatch = false;
 
     if (this.autoStatsMode) {
       this.autoStatsMode = false;
@@ -136,8 +139,12 @@ class BedWarsUtilities {
   async processPlayerData(playerNames) {
     await this.teamRanking.processAndDisplayRanking(
       playerNames,
-      this.tabManager
+      this.tabManager,
+      this.isSolosMode,
+      this.rankingSentThisMatch
     );
+
+    this.rankingSentThisMatch = true;
   }
 }
 
