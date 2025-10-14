@@ -91,30 +91,6 @@ class CommandHandler {
     this.api.config.set("main.polsuApiKey", trimmedKey);
     this.api.chat(`${this.api.getPrefix()} §aPolsu API key set successfully!`);
   }
-
-  handleSetNickCommand(ctx) {
-    const nickname = ctx.args.nickname;
-
-    if (!nickname || typeof nickname !== "string") {
-      this.api.chat(
-        `${this.api.getPrefix()} §cError: Please provide a valid nick!`
-      );
-      return;
-    }
-
-    const trimmedNick = nickname.trim();
-    if (trimmedNick.length === 0) {
-      this.api.chat(
-        `${this.api.getPrefix()} §cError: The nick cannot be empty!`
-      );
-      return;
-    }
-
-    this.api.config.set("main.MY_NICK", trimmedNick);
-    this.api.chat(
-      `${this.api.getPrefix()} §aNick set successfully: §f${trimmedNick}`
-    );
-  }
 }
 
 module.exports = CommandHandler;
