@@ -13,8 +13,9 @@ class ChatHandler {
     checkedPlayers,
     setAutoStatsMode
   ) {
-    const myNick = this.api.config.get("main.MY_NICK");
-    if (!myNick || myNick === "YOUR_NICK_HERE") return;
+    const me = this.api.getCurrentPlayer();
+    if (!me?.name) return;
+    const myNick = me.name;
 
     const solosJoinRegex = new RegExp(`^${myNick} has joined \\(\\d+\\/8\\)!$`);
     if (solosJoinRegex.test(cleanMessage)) {
