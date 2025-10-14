@@ -34,24 +34,6 @@ module.exports = [
     ],
   },
   {
-    label: "Your Nickname",
-    description:
-      "Set your Minecraft username or Hypixel nickname (not tested/supported(?) with nicknames). Use: /bwu setnick <nick>",
-    defaults: {
-      main: {
-        MY_NICK: "YOUR_NICK_HERE",
-      },
-    },
-    settings: [
-      {
-        key: "main.MY_NICK",
-        type: "text",
-        description:
-          "Your Minecraft username (case-sensitive). Use: /bwu setnick <nick>",
-      },
-    ],
-  },
-  {
     label: "Team Ranking",
     description:
       "Automatically ranks enemy teams by threat level (FKDR and Stars) at the start of the match.",
