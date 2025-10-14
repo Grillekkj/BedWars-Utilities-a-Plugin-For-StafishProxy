@@ -27,6 +27,7 @@
 2. **Extract** the contents **inside your Starfish `plugins` folder**.  
    - Packed as `.zip` because the plugin uses a **modular structure**.  
    - There’s **one main file** for Starfish to recognize it, and multiple **module folders** for system components.  
+3. Delete the readme.md file.
 
 ### 🧹 Step 2: Remove the Old Plugin
 This version **completely replaces and improves** the old **BedWars Utilities by [@Hexze](https://github.com/Hexze)** — fixing bugs, adding new features, and improving performance.  
@@ -49,6 +50,36 @@ After installing and starting your server:
 
 ### :speech_balloon: Step 5: Explore Commands
 Type `/bwu` in-game to see **all available commands** and options.
+
+## 🖼️ Demonstration
+
+### 📊 Auto Stats in Pre-Game Lobby
+Automatically displays players' stats when they talk in the pre-game lobby.  
+<img width="628" height="112" alt="image" src="https://github.com/user-attachments/assets/e47ea025-92c7-4d69-8eae-bddcfad4a4e7" />
+
+---
+
+### 🧾 Command to Check Everyone’s Stats
+Quickly check the stats of all players in the current lobby using a simple command.  
+<img width="739" height="180" alt="image" src="https://github.com/user-attachments/assets/a503150d-0afa-4197-883b-004119a9c248" />
+
+---
+
+### 🔁 Auto Requeue
+Automatically requeues when a player exceeds your configured FKDR threshold.  
+<img width="745" height="289" alt="image" src="https://github.com/user-attachments/assets/c865e3a3-f490-4e38-96b7-31e508a6b191" />
+
+---
+
+### 🏆 Ranking Message After Game Start
+Displays a ranking message with the strongest teams once the game begins.  
+<img width="762" height="110" alt="image" src="https://github.com/user-attachments/assets/c57bba8a-6163-4d58-a6e9-a25008b865a5" />
+
+---
+
+### 📋 Stats on TAB
+Displays players’ stars, FKDR, beds, and winstreak directly on the TAB list.  
+<img width="1004" height="267" alt="image" src="https://github.com/user-attachments/assets/6b3648b8-5926-457a-a729-279b2c9eda21" />
 
 ## 🔗 Links
 - **Starfish Proxy Repository:** [UrchinAPI/Starfish-Proxy](https://github.com/UrchinAPI/Starfish-Proxy)  
