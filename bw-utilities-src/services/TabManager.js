@@ -32,7 +32,13 @@ class TabManager {
       }
 
       const [stats, ping] = await Promise.all(promises);
-      const statsSuffix = this.statsFormatter.formatStatsSuffix(stats, ping);
+      //suffix
+      const statsSuffix = this.statsFormatter.formatStats(
+        "tab",
+        null,
+        stats,
+        ping
+      );
 
       this.api.setDisplayNameSuffix(player.uuid, statsSuffix);
       this.managedPlayers.set(playerName, {

@@ -97,7 +97,8 @@ class ChatHandler {
       }
     }
 
-    const message = this.statsFormatter.formatStatsMessage(
+    const message = this.statsFormatter.formatStats(
+      "chat",
       playerName,
       stats,
       ping
