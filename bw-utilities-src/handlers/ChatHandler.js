@@ -16,6 +16,14 @@ class ChatHandler {
     const myNick = this.api.config.get("main.MY_NICK");
     if (!myNick || myNick === "YOUR_NICK_HERE") return;
 
+    const solosJoinRegex = new RegExp(`^${myNick} has joined \\(\\d+\\/8\\)!$`);
+    if (solosJoinRegex.test(cleanMessage)) {
+      this.bwuInstance.isSolosMode = true;
+      this.api.chat(
+        `${this.api.getPrefix()} §aSolos mode detected. Ranking will be sent privately.`
+      );
+    }
+
     // Auto Stats Mode
     if (this.api.config.get("autoStats.enabled") && !autoStatsMode) {
       const joinRegex = new RegExp(`^${myNick} has joined \\(\\d+\\/\\d+\\)!$`);
