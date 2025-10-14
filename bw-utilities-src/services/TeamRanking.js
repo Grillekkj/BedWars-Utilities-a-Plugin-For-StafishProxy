@@ -22,10 +22,9 @@ class TeamRanking {
   }
 
   getMyTeamLetter() {
-    const myNick = this.api.config.get("main.MY_NICK");
-    const me = this.api.getPlayerByName(myNick);
+    const me = this.api.getCurrentPlayer();
 
-    if (!me) return null;
+    if (!me?.name) return null;
 
     const myTeam = this.api.getPlayerTeam(me.name);
     return this.getTeamLetter(myTeam?.prefix);
