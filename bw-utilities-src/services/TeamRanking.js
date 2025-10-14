@@ -31,21 +31,15 @@ class TeamRanking {
     return this.getTeamLetter(myTeam?.prefix);
   }
 
-  async processAndDisplayRanking(
-    playerNames,
-    tabManager,
-    isSolosMode,
-    rankingSent
-  ) {
+  async processAndDisplayRanking(playerNames, isSolosMode, rankingSent) {
     if (!this.api.config.get("teamRanking.enabled")) {
-      playerNames.forEach((playerName) => {
-        tabManager.addPlayerStatsToTab(playerName);
-      });
       return;
     }
 
     this.api.chat(
-      `${this.api.getPrefix()} §eAnalyzing ${playerNames.length} players...`
+      `${this.api.getPrefix()} §eAnalyzing ${
+        playerNames.length
+      } players for team ranking...`
     );
 
     const myTeamLetter = this.getMyTeamLetter();
@@ -54,27 +48,18 @@ class TeamRanking {
       this.api.chat(
         `${this.api.getPrefix()} §cUnable to detect your team. Ranking will not be calculated.`
       );
-      playerNames.forEach((playerName) => {
-        tabManager.addPlayerStatsToTab(playerName);
-      });
       return;
     }
 
-    const teamsData = await this.collectTeamsData(
-      playerNames,
-      myTeamLetter,
-      tabManager
-    );
+    const teamsData = await this.collectTeamsData(playerNames, myTeamLetter);
     await this.displayRanking(teamsData, isSolosMode, rankingSent);
   }
 
-  async collectTeamsData(playerNames, myTeamLetter, tabManager) {
+  async collectTeamsData(playerNames, myTeamLetter) {
     const teamsData = {};
 
     await Promise.all(
       playerNames.map(async (playerName) => {
-        tabManager.addPlayerStatsToTab(playerName);
-
         const player = this.api.getPlayerByName(playerName);
         if (!player) return;
 
@@ -91,7 +76,7 @@ class TeamRanking {
         const stars =
           stats && !stats.isNicked && stats.stars !== undefined
             ? stats.stars
-            : 0;
+            : 500;
 
         if (!teamsData[teamLetter]) {
           teamsData[teamLetter] = { totalFkdr: 0, totalStars: 0 };
