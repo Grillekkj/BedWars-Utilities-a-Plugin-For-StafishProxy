@@ -137,9 +137,12 @@ class BedWarsUtilities {
   }
 
   async processPlayerData(playerNames) {
+    playerNames.forEach((playerName) =>
+      this.tabManager.addPlayerStatsToTab(playerName)
+    );
+
     await this.teamRanking.processAndDisplayRanking(
       playerNames,
-      this.tabManager,
       this.isSolosMode,
       this.rankingSentThisMatch
     );
