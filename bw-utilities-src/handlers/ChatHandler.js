@@ -17,14 +17,6 @@ class ChatHandler {
     if (!me?.name) return;
     const myNick = me.name;
 
-    const solosJoinRegex = new RegExp(`^${myNick} has joined \\(\\d+\\/8\\)!$`);
-    if (solosJoinRegex.test(cleanMessage)) {
-      this.bwuInstance.isSolosMode = true;
-      this.api.chat(
-        `${this.api.getPrefix()} §aSolos mode detected. Ranking will be sent privately.`
-      );
-    }
-
     // Auto Stats Mode
     if (this.api.config.get("autoStats.enabled") && !autoStatsMode) {
       const joinRegex = new RegExp(`^${myNick} has joined \\(\\d+\\/\\d+\\)!$`);
