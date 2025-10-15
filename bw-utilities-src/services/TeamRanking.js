@@ -15,6 +15,15 @@ class TeamRanking {
     this.apiService = apiService;
   }
 
+  _sendMessage(message, isPrivate) {
+    if (isPrivate) {
+      this.api.chat(message);
+    } else {
+      const cleanMessage = message.replace(/§[0-9a-fk-or]/g, "");
+      this.api.sendChatToServer(`/ac ${cleanMessage}`);
+    }
+  }
+
   getTeamLetter(rawPrefix) {
     if (!rawPrefix) return null;
     const match = rawPrefix.match(/[A-Z]/);
@@ -23,9 +32,7 @@ class TeamRanking {
 
   getMyTeamLetter() {
     const me = this.api.getCurrentPlayer();
-
     if (!me?.name) return null;
-
     const myTeam = this.api.getPlayerTeam(me.name);
     return this.getTeamLetter(myTeam?.prefix);
   }
@@ -94,8 +101,12 @@ class TeamRanking {
       return;
     }
 
+    const alwaysPrivate = this.api.config.get("privateRanking.alwaysPrivate");
+    const sendPrivately = isSolosMode || alwaysPrivate;
+
     const sortedTeams = Object.entries(teamsData)
       .map(([letter, data]) => ({
+        letter,
         name: TEAM_MAP[letter]?.name || "Unknown",
         totalFkdr: data.totalFkdr,
         totalStars: data.totalStars,
@@ -110,12 +121,16 @@ class TeamRanking {
     }
 
     const rankingParts = sortedTeams.map((team, index) => {
-      const teamInfo = `${index + 1}. ${team.name} (Stars: ${
+      const teamColor = sendPrivately
+        ? TEAM_MAP[team.letter]?.color || "§7"
+        : "";
+      const teamInfo = `${index + 1}. ${teamColor}${team.name} §f(Stars: ${
         team.totalStars
       } | FKDR: ${team.totalFkdr.toFixed(1)})`;
+
       if (index === 0) {
-        const targetMessage = isSolosMode
-          ? "<- TARGET"
+        const targetMessage = sendPrivately
+          ? "§c <- TARGET"
           : "<- TARGET (no crossmap unless they start)";
         return `${teamInfo} ${targetMessage}`;
       }
@@ -124,22 +139,18 @@ class TeamRanking {
 
     const targetMessage = rankingParts.shift();
 
-    if (isSolosMode) {
-      this.api.chat(targetMessage);
-    } else {
-      this.api.sendChatToServer(`/ac ${targetMessage}`);
-    }
+    this._sendMessage(targetMessage, sendPrivately);
 
     if (rankingParts.length > 0) {
-      this.sendRankingMessages(rankingParts, isSolosMode);
+      this.sendRankingMessages(rankingParts, sendPrivately);
     }
   }
 
-  sendRankingMessages(rankingParts, isSolosMode) {
+  sendRankingMessages(rankingParts, isPrivate) {
     const messagesToSend = [];
     let currentMessage = "";
     const CHAT_LIMIT = 240;
-    const SEPARATOR = " // ";
+    const SEPARATOR = " §6//§f ";
 
     for (const part of rankingParts) {
       if (currentMessage === "") {
@@ -162,11 +173,7 @@ class TeamRanking {
     for (let i = 0; i < messagesToSend.length; i++) {
       const msg = messagesToSend[i];
       setTimeout(() => {
-        if (isSolosMode) {
-          this.api.chat(msg);
-        } else {
-          this.api.sendChatToServer(`/ac ${msg}`);
-        }
+        this._sendMessage(msg, isPrivate);
       }, (i + 1) * 350);
     }
   }
