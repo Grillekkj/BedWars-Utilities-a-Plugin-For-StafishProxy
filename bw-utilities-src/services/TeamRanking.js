@@ -106,7 +106,7 @@ class TeamRanking {
         singlePlayerTeamCount++;
       }
     }
-    const isSolosMode = singlePlayerTeamCount > 2;
+    const isSolosMode = singlePlayerTeamCount >= 2;
 
     return { teamsData, isSolosMode };
   }
