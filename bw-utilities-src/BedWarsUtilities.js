@@ -32,7 +32,6 @@ class BedWarsUtilities {
     this.checkedPlayersInAutoMode = new Set();
     this.lastCleanMessage = null;
     this.requeueTriggered = false;
-    this.isSolosMode = false;
     this.rankingSentThisMatch = false;
   }
 
@@ -118,7 +117,6 @@ class BedWarsUtilities {
     this.gameHandler.resetGameState();
     this.lastCleanMessage = null;
     this.requeueTriggered = false;
-    this.isSolosMode = false;
     this.rankingSentThisMatch = false;
 
     if (this.autoStatsMode) {
@@ -135,7 +133,6 @@ class BedWarsUtilities {
 
     await this.teamRanking.processAndDisplayRanking(
       playerNames,
-      this.isSolosMode,
       this.rankingSentThisMatch
     );
 
