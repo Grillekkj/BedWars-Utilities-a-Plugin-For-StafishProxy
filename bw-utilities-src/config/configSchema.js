@@ -52,6 +52,25 @@ module.exports = [
     ],
   },
   {
+    label: "Private Ranking",
+    description:
+      "Force the team ranking message to always be sent privately to you.",
+    defaults: {
+      privateRanking: {
+        alwaysPrivate: false,
+      },
+    },
+    settings: [
+      {
+        key: "privateRanking.alwaysPrivate",
+        type: "toggle",
+        text: ["OFF", "ON"],
+        description:
+          "If ON, the ranking message will be sent only to you (colored) in all game modes.",
+      },
+    ],
+  },
+  {
     label: "Auto /who",
     description:
       "Automatically run /who at the start of the match (Bedwars only)",
