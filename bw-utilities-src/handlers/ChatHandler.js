@@ -13,16 +13,9 @@ class ChatHandler {
     checkedPlayers,
     setAutoStatsMode
   ) {
-    const myNick = this.api.config.get("main.MY_NICK");
-    if (!myNick || myNick === "YOUR_NICK_HERE") return;
-
-    const solosJoinRegex = new RegExp(`^${myNick} has joined \\(\\d+\\/8\\)!$`);
-    if (solosJoinRegex.test(cleanMessage)) {
-      this.bwuInstance.isSolosMode = true;
-      this.api.chat(
-        `${this.api.getPrefix()} §aSolos mode detected. Ranking will be sent privately.`
-      );
-    }
+    const me = this.api.getCurrentPlayer();
+    if (!me?.name) return;
+    const myNick = me.name;
 
     // Auto Stats Mode
     if (this.api.config.get("autoStats.enabled") && !autoStatsMode) {
@@ -97,7 +90,8 @@ class ChatHandler {
       }
     }
 
-    const message = this.statsFormatter.formatStatsMessage(
+    const message = this.statsFormatter.formatStats(
+      "chat",
       playerName,
       stats,
       ping

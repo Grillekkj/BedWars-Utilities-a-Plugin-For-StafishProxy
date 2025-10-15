@@ -15,6 +15,15 @@ class TeamRanking {
     this.apiService = apiService;
   }
 
+  _sendMessage(message, isPrivate) {
+    if (isPrivate) {
+      this.api.chat(message);
+    } else {
+      const cleanMessage = message.replace(/§[0-9a-fk-or]/g, "");
+      this.api.sendChatToServer(`/ac ${cleanMessage}`);
+    }
+  }
+
   getTeamLetter(rawPrefix) {
     if (!rawPrefix) return null;
     const match = rawPrefix.match(/[A-Z]/);
@@ -22,68 +31,58 @@ class TeamRanking {
   }
 
   getMyTeamLetter() {
-    const myNick = this.api.config.get("main.MY_NICK");
-    const me = this.api.getPlayerByName(myNick);
-
-    if (!me) return null;
-
+    const me = this.api.getCurrentPlayer();
+    if (!me?.name) return null;
     const myTeam = this.api.getPlayerTeam(me.name);
     return this.getTeamLetter(myTeam?.prefix);
   }
 
-  async processAndDisplayRanking(
-    playerNames,
-    tabManager,
-    isSolosMode,
-    rankingSent
-  ) {
+  async processAndDisplayRanking(playerNames, rankingSent) {
     if (!this.api.config.get("teamRanking.enabled")) {
-      playerNames.forEach((playerName) => {
-        tabManager.addPlayerStatsToTab(playerName);
-      });
       return;
     }
 
     this.api.chat(
-      `${this.api.getPrefix()} §eAnalyzing ${playerNames.length} players...`
+      `${this.api.getPrefix()} §eAnalyzing ${
+        playerNames.length
+      } players for team ranking...`
     );
 
     const myTeamLetter = this.getMyTeamLetter();
-
     if (!myTeamLetter) {
       this.api.chat(
         `${this.api.getPrefix()} §cUnable to detect your team. Ranking will not be calculated.`
       );
-      playerNames.forEach((playerName) => {
-        tabManager.addPlayerStatsToTab(playerName);
-      });
       return;
     }
 
-    const teamsData = await this.collectTeamsData(
+    const { teamsData, isSolosMode } = await this.collectTeamsData(
       playerNames,
-      myTeamLetter,
-      tabManager
+      myTeamLetter
     );
     await this.displayRanking(teamsData, isSolosMode, rankingSent);
   }
 
-  async collectTeamsData(playerNames, myTeamLetter, tabManager) {
+  async collectTeamsData(playerNames, myTeamLetter) {
     const teamsData = {};
+    const teamPlayerCounts = {};
 
     await Promise.all(
       playerNames.map(async (playerName) => {
-        tabManager.addPlayerStatsToTab(playerName);
-
         const player = this.api.getPlayerByName(playerName);
         if (!player) return;
 
-        const stats = await this.apiService.getPlayerStats(playerName);
         const team = this.api.getPlayerTeam(playerName);
         const teamLetter = this.getTeamLetter(team?.prefix);
 
+        if (teamLetter) {
+          teamPlayerCounts[teamLetter] =
+            (teamPlayerCounts[teamLetter] || 0) + 1;
+        }
+
         if (!teamLetter || teamLetter === myTeamLetter) return;
 
+        const stats = await this.apiService.getPlayerStats(playerName);
         const fkdr =
           stats && !stats.isNicked && stats.fkdr !== undefined
             ? stats.fkdr
@@ -91,18 +90,25 @@ class TeamRanking {
         const stars =
           stats && !stats.isNicked && stats.stars !== undefined
             ? stats.stars
-            : 0;
+            : 500;
 
         if (!teamsData[teamLetter]) {
           teamsData[teamLetter] = { totalFkdr: 0, totalStars: 0 };
         }
-
         teamsData[teamLetter].totalFkdr += fkdr;
         teamsData[teamLetter].totalStars += stars;
       })
     );
 
-    return teamsData;
+    let singlePlayerTeamCount = 0;
+    for (const teamSize of Object.values(teamPlayerCounts)) {
+      if (teamSize === 1) {
+        singlePlayerTeamCount++;
+      }
+    }
+    const isSolosMode = singlePlayerTeamCount >= 2;
+
+    return { teamsData, isSolosMode };
   }
 
   async displayRanking(teamsData, isSolosMode, rankingSent) {
@@ -110,8 +116,12 @@ class TeamRanking {
       return;
     }
 
+    const alwaysPrivate = this.api.config.get("privateRanking.alwaysPrivate");
+    const sendPrivately = isSolosMode || alwaysPrivate;
+
     const sortedTeams = Object.entries(teamsData)
       .map(([letter, data]) => ({
+        letter,
         name: TEAM_MAP[letter]?.name || "Unknown",
         totalFkdr: data.totalFkdr,
         totalStars: data.totalStars,
@@ -126,12 +136,16 @@ class TeamRanking {
     }
 
     const rankingParts = sortedTeams.map((team, index) => {
-      const teamInfo = `${index + 1}. ${team.name} (Stars: ${
+      const teamColor = sendPrivately
+        ? TEAM_MAP[team.letter]?.color || "§7"
+        : "";
+      const teamInfo = `${index + 1}. ${teamColor}${team.name} §f(Stars: ${
         team.totalStars
       } | FKDR: ${team.totalFkdr.toFixed(1)})`;
+
       if (index === 0) {
-        const targetMessage = isSolosMode
-          ? "<- TARGET"
+        const targetMessage = sendPrivately
+          ? "§c <- TARGET"
           : "<- TARGET (no crossmap unless they start)";
         return `${teamInfo} ${targetMessage}`;
       }
@@ -139,23 +153,18 @@ class TeamRanking {
     });
 
     const targetMessage = rankingParts.shift();
-
-    if (isSolosMode) {
-      this.api.chat(targetMessage);
-    } else {
-      this.api.sendChatToServer(`/ac ${targetMessage}`);
-    }
+    this._sendMessage(targetMessage, sendPrivately);
 
     if (rankingParts.length > 0) {
-      this.sendRankingMessages(rankingParts, isSolosMode);
+      this.sendRankingMessages(rankingParts, sendPrivately);
     }
   }
 
-  sendRankingMessages(rankingParts, isSolosMode) {
+  sendRankingMessages(rankingParts, isPrivate) {
     const messagesToSend = [];
     let currentMessage = "";
     const CHAT_LIMIT = 240;
-    const SEPARATOR = " // ";
+    const SEPARATOR = " §6//§f ";
 
     for (const part of rankingParts) {
       if (currentMessage === "") {
@@ -178,11 +187,7 @@ class TeamRanking {
     for (let i = 0; i < messagesToSend.length; i++) {
       const msg = messagesToSend[i];
       setTimeout(() => {
-        if (isSolosMode) {
-          this.api.chat(msg);
-        } else {
-          this.api.sendChatToServer(`/ac ${msg}`);
-        }
+        this._sendMessage(msg, isPrivate);
       }, (i + 1) * 350);
     }
   }

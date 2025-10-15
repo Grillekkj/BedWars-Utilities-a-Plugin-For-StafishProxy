@@ -14,16 +14,15 @@ class GameHandler {
       return true;
     }
 
-    // New auto who by me (work for any dream mode)
-    // Soon will work with bw duels too give me some time :sob:
+    // New auto who by me (work for any dream mode and duels (: )
     const divider =
       "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬";
-    const titleText = "Bed Wars";
+    const validTitles = ["Bed Wars", "Bed Wars Duels"];
 
     if (
       lastCleanMessage &&
       lastCleanMessage.trim() === divider &&
-      currentCleanMessage.trim() === titleText
+      validTitles.includes(currentCleanMessage.trim())
     ) {
       return true;
     }

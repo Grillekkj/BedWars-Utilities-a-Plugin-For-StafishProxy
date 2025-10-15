@@ -32,7 +32,6 @@ class BedWarsUtilities {
     this.checkedPlayersInAutoMode = new Set();
     this.lastCleanMessage = null;
     this.requeueTriggered = false;
-    this.isSolosMode = false;
     this.rankingSentThisMatch = false;
   }
 
@@ -69,14 +68,6 @@ class BedWarsUtilities {
         .description("Set your Polsu API key")
         .argument("<apikey>", { description: "Your Polsu API key" })
         .handler((ctx) => this.commandHandler.handleSetPolsuCommand(ctx));
-
-      registry
-        .command("setnick")
-        .description("Set your nick")
-        .argument("<nickname>", {
-          description: "Your nick",
-        })
-        .handler((ctx) => this.commandHandler.handleSetNickCommand(ctx));
     });
   }
 
@@ -126,7 +117,6 @@ class BedWarsUtilities {
     this.gameHandler.resetGameState();
     this.lastCleanMessage = null;
     this.requeueTriggered = false;
-    this.isSolosMode = false;
     this.rankingSentThisMatch = false;
 
     if (this.autoStatsMode) {
@@ -137,10 +127,12 @@ class BedWarsUtilities {
   }
 
   async processPlayerData(playerNames) {
+    playerNames.forEach((playerName) =>
+      this.tabManager.addPlayerStatsToTab(playerName)
+    );
+
     await this.teamRanking.processAndDisplayRanking(
       playerNames,
-      this.tabManager,
-      this.isSolosMode,
       this.rankingSentThisMatch
     );
 

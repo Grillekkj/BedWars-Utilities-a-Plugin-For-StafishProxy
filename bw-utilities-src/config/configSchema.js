@@ -34,24 +34,6 @@ module.exports = [
     ],
   },
   {
-    label: "Your Nickname",
-    description:
-      "Set your Minecraft username or Hypixel nickname (not tested/supported(?) with nicknames). Use: /bwu setnick <nick>",
-    defaults: {
-      main: {
-        MY_NICK: "YOUR_NICK_HERE",
-      },
-    },
-    settings: [
-      {
-        key: "main.MY_NICK",
-        type: "text",
-        description:
-          "Your Minecraft username (case-sensitive). Use: /bwu setnick <nick>",
-      },
-    ],
-  },
-  {
     label: "Team Ranking",
     description:
       "Automatically ranks enemy teams by threat level (FKDR and Stars) at the start of the match.",
@@ -66,6 +48,25 @@ module.exports = [
         type: "toggle",
         text: ["OFF", "ON"],
         description: "Enable or disable automatic team ranking.",
+      },
+    ],
+  },
+  {
+    label: "Private Ranking",
+    description:
+      "Force the team ranking message to always be sent privately to you.",
+    defaults: {
+      privateRanking: {
+        alwaysPrivate: false,
+      },
+    },
+    settings: [
+      {
+        key: "privateRanking.alwaysPrivate",
+        type: "toggle",
+        text: ["OFF", "ON"],
+        description:
+          "If ON, the ranking message will be sent only to you (colored) in all game modes.",
       },
     ],
   },
