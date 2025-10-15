@@ -37,7 +37,15 @@ class TeamRanking {
     return this.getTeamLetter(myTeam?.prefix);
   }
 
-  async processAndDisplayRanking(playerNames, isSolosMode, rankingSent) {
+  _isSolosGame() {
+    const me = this.api.getCurrentPlayer();
+    if (!me?.name) return false;
+
+    const myTeam = this.api.getPlayerTeam(me.name);
+    return myTeam?.players?.length === 1;
+  }
+
+  async processAndDisplayRanking(playerNames, rankingSent) {
     if (!this.api.config.get("teamRanking.enabled")) {
       return;
     }
@@ -58,7 +66,7 @@ class TeamRanking {
     }
 
     const teamsData = await this.collectTeamsData(playerNames, myTeamLetter);
-    await this.displayRanking(teamsData, isSolosMode, rankingSent);
+    await this.displayRanking(teamsData, rankingSent);
   }
 
   async collectTeamsData(playerNames, myTeamLetter) {
@@ -96,13 +104,14 @@ class TeamRanking {
     return teamsData;
   }
 
-  async displayRanking(teamsData, isSolosMode, rankingSent) {
+  async displayRanking(teamsData, rankingSent) {
     if (rankingSent) {
       return;
     }
 
+    const isSolosGame = this._isSolosGame();
     const alwaysPrivate = this.api.config.get("privateRanking.alwaysPrivate");
-    const sendPrivately = isSolosMode || alwaysPrivate;
+    const sendPrivately = isSolosGame || alwaysPrivate;
 
     const sortedTeams = Object.entries(teamsData)
       .map(([letter, data]) => ({
@@ -138,7 +147,6 @@ class TeamRanking {
     });
 
     const targetMessage = rankingParts.shift();
-
     this._sendMessage(targetMessage, sendPrivately);
 
     if (rankingParts.length > 0) {
