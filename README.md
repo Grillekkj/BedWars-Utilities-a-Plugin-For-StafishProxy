@@ -44,7 +44,6 @@ After installing and starting your server:
    ```
    /bwu setkey <your Hypixel API key>
    /bwu setpolsu <your Polsu API key>
-   /bwu setnick <your Minecraft nickname>
    ```
 2. Then check your configuration and adjust the plugin to your needs.  
 
