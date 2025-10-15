@@ -24,10 +24,14 @@
 
 ### 📦 Step 1: Extract the Files
 1. Go to the **[Releases Page](https://github.com/Grillekkj/BedWars-Utilities-a-Plugin-For-StafishProxy/releases)** and download the latest `.zip` file.
-2. **Extract** the contents **inside your Starfish `plugins` folder**.  
+2. **Extract** the `.zip` file **and move the files out of the extracted folder** (don’t leave them inside the extra folder the zip creates).
+3. Place all files directly inside your **Starfish `plugins` folder**.  
    - Packed as `.zip` because the plugin uses a **modular structure**.  
    - There’s **one main file** for Starfish to recognize it, and multiple **module folders** for system components.  
-3. Delete the readme.md file.
+4. **Delete the `readme.md` file** (it’s not needed for the plugin to work).
+
+⚠️ **Caution:**  
+If everything is correct, you’ll have a folder named **`bw-utilities-src`** and a file named **`bw-utilities-core-x-x-x.js`** in your Starfish `plugins` folder (`x` = version number).
 
 ### 🧹 Step 2: Remove the Old Plugin
 This version **completely replaces and improves** the old **BedWars Utilities by [@Hexze](https://github.com/Hexze)** — fixing bugs, adding new features, and improving performance.  
