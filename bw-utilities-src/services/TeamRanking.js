@@ -37,14 +37,6 @@ class TeamRanking {
     return this.getTeamLetter(myTeam?.prefix);
   }
 
-  _isSolosGame() {
-    const me = this.api.getCurrentPlayer();
-    if (!me?.name) return false;
-
-    const myTeam = this.api.getPlayerTeam(me.name);
-    return myTeam?.players?.length === 1;
-  }
-
   async processAndDisplayRanking(playerNames, rankingSent) {
     if (!this.api.config.get("teamRanking.enabled")) {
       return;
@@ -57,7 +49,6 @@ class TeamRanking {
     );
 
     const myTeamLetter = this.getMyTeamLetter();
-
     if (!myTeamLetter) {
       this.api.chat(
         `${this.api.getPrefix()} §cUnable to detect your team. Ranking will not be calculated.`
@@ -65,24 +56,33 @@ class TeamRanking {
       return;
     }
 
-    const teamsData = await this.collectTeamsData(playerNames, myTeamLetter);
-    await this.displayRanking(teamsData, rankingSent);
+    const { teamsData, isSolosMode } = await this.collectTeamsData(
+      playerNames,
+      myTeamLetter
+    );
+    await this.displayRanking(teamsData, isSolosMode, rankingSent);
   }
 
   async collectTeamsData(playerNames, myTeamLetter) {
     const teamsData = {};
+    const teamPlayerCounts = {};
 
     await Promise.all(
       playerNames.map(async (playerName) => {
         const player = this.api.getPlayerByName(playerName);
         if (!player) return;
 
-        const stats = await this.apiService.getPlayerStats(playerName);
         const team = this.api.getPlayerTeam(playerName);
         const teamLetter = this.getTeamLetter(team?.prefix);
 
+        if (teamLetter) {
+          teamPlayerCounts[teamLetter] =
+            (teamPlayerCounts[teamLetter] || 0) + 1;
+        }
+
         if (!teamLetter || teamLetter === myTeamLetter) return;
 
+        const stats = await this.apiService.getPlayerStats(playerName);
         const fkdr =
           stats && !stats.isNicked && stats.fkdr !== undefined
             ? stats.fkdr
@@ -95,23 +95,29 @@ class TeamRanking {
         if (!teamsData[teamLetter]) {
           teamsData[teamLetter] = { totalFkdr: 0, totalStars: 0 };
         }
-
         teamsData[teamLetter].totalFkdr += fkdr;
         teamsData[teamLetter].totalStars += stars;
       })
     );
 
-    return teamsData;
+    let singlePlayerTeamCount = 0;
+    for (const teamSize of Object.values(teamPlayerCounts)) {
+      if (teamSize === 1) {
+        singlePlayerTeamCount++;
+      }
+    }
+    const isSolosMode = singlePlayerTeamCount > 2;
+
+    return { teamsData, isSolosMode };
   }
 
-  async displayRanking(teamsData, rankingSent) {
+  async displayRanking(teamsData, isSolosMode, rankingSent) {
     if (rankingSent) {
       return;
     }
 
-    const isSolosGame = this._isSolosGame();
     const alwaysPrivate = this.api.config.get("privateRanking.alwaysPrivate");
-    const sendPrivately = isSolosGame || alwaysPrivate;
+    const sendPrivately = isSolosMode || alwaysPrivate;
 
     const sortedTeams = Object.entries(teamsData)
       .map(([letter, data]) => ({
