@@ -71,6 +71,24 @@ module.exports = [
     ],
   },
   {
+    label: "Separate Ranking Msgs",
+    description: "Display each team's ranking in a separate chat message.",
+    defaults: {
+      teamRanking: {
+        separateMessages: false,
+      },
+    },
+    settings: [
+      {
+        key: "teamRanking.separateMessages",
+        type: "toggle",
+        text: ["OFF", "ON"],
+        description:
+          "If ON, each team in the ranking will be sent as a separate message.",
+      },
+    ],
+  },
+  {
     label: "Auto /who",
     description:
       "Automatically run /who at the start of the match (Bedwars only)",
