@@ -10,7 +10,7 @@ module.exports = (api) => {
     name: "bwu",
     displayName: "BedWars Utilities",
     prefix: "§6BWU",
-    version: "1.2.0",
+    version: "1.2.1",
     author: "Grille (silly_brazil)",
     description:
       "A versatile Bedwars plugin offering a variety of useful features to enhance gameplay.",
