@@ -127,6 +127,9 @@ class TeamRanking {
     }
 
     const alwaysPrivate = this.api.config.get("privateRanking.alwaysPrivate");
+    const useSeparateMessages = this.api.config.get(
+      "teamRanking.separateMessages"
+    );
     const sendPrivately = isSolosMode || alwaysPrivate;
 
     const sortedTeams = Object.entries(teamsData)
@@ -162,11 +165,21 @@ class TeamRanking {
       return teamInfo;
     });
 
-    const targetMessage = rankingParts.shift();
-    this._sendMessage(targetMessage, sendPrivately);
+    if (useSeparateMessages) {
+      let index = 0;
+      for (const part of rankingParts) {
+        setTimeout(() => {
+          this._sendMessage(part, sendPrivately);
+        }, index * 350);
+        index++;
+      }
+    } else {
+      const targetMessage = rankingParts.shift();
+      this._sendMessage(targetMessage, sendPrivately);
 
-    if (rankingParts.length > 0) {
-      this.sendRankingMessages(rankingParts, sendPrivately);
+      if (rankingParts.length > 0) {
+        this.sendRankingMessages(rankingParts, sendPrivately);
+      }
     }
   }
 
