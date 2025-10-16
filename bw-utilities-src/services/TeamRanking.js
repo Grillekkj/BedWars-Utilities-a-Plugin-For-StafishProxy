@@ -32,8 +32,18 @@ class TeamRanking {
 
   getMyTeamLetter() {
     const me = this.api.getCurrentPlayer();
-    if (!me?.name) return null;
-    const myTeam = this.api.getPlayerTeam(me.name);
+    if (!me?.uuid) {
+      return null;
+    }
+
+    const myServerInfo = this.api.getPlayerInfo(me.uuid);
+    if (!myServerInfo?.name) {
+      return null;
+    }
+
+    const nameAsSeenByServer = myServerInfo.name;
+    const myTeam = this.api.getPlayerTeam(nameAsSeenByServer);
+
     return this.getTeamLetter(myTeam?.prefix);
   }
 
