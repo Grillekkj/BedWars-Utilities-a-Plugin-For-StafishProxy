@@ -14,8 +14,8 @@ class ChatHandler {
     setAutoStatsMode
   ) {
     const me = this.api.getCurrentPlayer();
-    if (!me?.name) return;
-    const myNick = me.name;
+    if (!me?.uuid) return;
+    const myNick = this.api.getPlayerInfo(me.uuid)?.name || me.name;
 
     // Auto Stats Mode
     if (this.api.config.get("autoStats.enabled") && !autoStatsMode) {
