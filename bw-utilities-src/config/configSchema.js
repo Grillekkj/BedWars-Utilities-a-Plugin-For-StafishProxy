@@ -210,85 +210,115 @@ module.exports = [
   {
     label: "Stats - Level (Stars)",
     description: "Show the level (stars).",
-    defaults: {
-      stats: {
-        showStars: true,
-      },
-    },
+    defaults: { stats: { showStars: { enabled: true, displayMode: "both" } } },
     settings: [
       {
-        key: "stats.showStars",
+        key: "stats.showStars.enabled",
         type: "toggle",
         text: ["OFF", "ON"],
         description: "Show the level (stars).",
+      },
+      {
+        key: "stats.showStars.displayMode",
+        type: "cycle",
+        description: "Where to show stars.",
+        values: [
+          { text: "Chat", value: "chat" },
+          { text: "Tab", value: "tab" },
+          { text: "Both", value: "both" },
+        ],
       },
     ],
   },
   {
     label: "Stats - FKDR",
     description: "Show the Final Kills / Deaths ratio.",
-    defaults: {
-      stats: {
-        showFkdr: true,
-      },
-    },
+    defaults: { stats: { showFkdr: { enabled: true, displayMode: "both" } } },
     settings: [
       {
-        key: "stats.showFkdr",
+        key: "stats.showFkdr.enabled",
         type: "toggle",
         text: ["OFF", "ON"],
         description: "Show the Final Kills / Deaths ratio.",
+      },
+      {
+        key: "stats.showFkdr.displayMode",
+        type: "cycle",
+        description: "Where to show FKDR.",
+        values: [
+          { text: "Chat", value: "chat" },
+          { text: "Tab", value: "tab" },
+          { text: "Both", value: "both" },
+        ],
       },
     ],
   },
   {
     label: "Stats - Final Kills",
     description: "Show the total Final Kills.",
-    defaults: {
-      stats: {
-        showFK: true,
-      },
-    },
+    defaults: { stats: { showFK: { enabled: true, displayMode: "both" } } },
     settings: [
       {
-        key: "stats.showFK",
+        key: "stats.showFK.enabled",
         type: "toggle",
         text: ["OFF", "ON"],
         description: "Show the total Final Kills.",
+      },
+      {
+        key: "stats.showFK.displayMode",
+        type: "cycle",
+        description: "Where to show Final Kills.",
+        values: [
+          { text: "Chat", value: "chat" },
+          { text: "Tab", value: "tab" },
+          { text: "Both", value: "both" },
+        ],
       },
     ],
   },
   {
     label: "Stats - Final Deaths",
     description: "Show the total Final Deaths.",
-    defaults: {
-      stats: {
-        showFD: true,
-      },
-    },
+    defaults: { stats: { showFD: { enabled: true, displayMode: "both" } } },
     settings: [
       {
-        key: "stats.showFD",
+        key: "stats.showFD.enabled",
         type: "toggle",
         text: ["OFF", "ON"],
         description: "Show the total Final Deaths.",
+      },
+      {
+        key: "stats.showFD.displayMode",
+        type: "cycle",
+        description: "Where to show Final Deaths.",
+        values: [
+          { text: "Chat", value: "chat" },
+          { text: "Tab", value: "tab" },
+          { text: "Both", value: "both" },
+        ],
       },
     ],
   },
   {
     label: "Stats - Beds Broken",
     description: "Show the total Beds Broken.",
-    defaults: {
-      stats: {
-        showBeds: true,
-      },
-    },
+    defaults: { stats: { showBeds: { enabled: true, displayMode: "both" } } },
     settings: [
       {
-        key: "stats.showBeds",
+        key: "stats.showBeds.enabled",
         type: "toggle",
         text: ["OFF", "ON"],
         description: "Show the total Beds Broken.",
+      },
+      {
+        key: "stats.showBeds.displayMode",
+        type: "cycle",
+        description: "Where to show Beds Broken.",
+        values: [
+          { text: "Chat", value: "chat" },
+          { text: "Tab", value: "tab" },
+          { text: "Both", value: "both" },
+        ],
       },
     ],
   },
@@ -296,35 +326,48 @@ module.exports = [
     label: "Stats - Winstreak",
     description: "Show the current Winstreak",
     defaults: {
-      stats: {
-        showWinstreak: true,
-      },
+      stats: { showWinstreak: { enabled: true, displayMode: "both" } },
     },
     settings: [
       {
-        key: "stats.showWinstreak",
+        key: "stats.showWinstreak.enabled",
         type: "toggle",
         text: ["OFF", "ON"],
         description: "Show the current Winstreak",
+      },
+      {
+        key: "stats.showWinstreak.displayMode",
+        type: "cycle",
+        description: "Where to show Winstreak.",
+        values: [
+          { text: "Chat", value: "chat" },
+          { text: "Tab", value: "tab" },
+          { text: "Both", value: "both" },
+        ],
       },
     ],
   },
   {
     label: "Stats - Ping",
     description: "Show the player's ping (requires Polsu API).",
-    defaults: {
-      stats: {
-        showPing: true,
-      },
-    },
+    defaults: { stats: { showPing: { enabled: true, displayMode: "both" } } },
     settings: [
       {
-        key: "stats.showPing",
+        key: "stats.showPing.enabled",
         type: "toggle",
         text: ["OFF", "ON"],
         description: "Show the player's ping.",
       },
+      {
+        key: "stats.showPing.displayMode",
+        type: "cycle",
+        description: "Where to show Ping.",
+        values: [
+          { text: "Chat", value: "chat" },
+          { text: "Tab", value: "tab" },
+          { text: "Both", value: "both" },
+        ],
+      },
     ],
   },
 ];
-
