@@ -36,6 +36,7 @@ class BedWarsUtilities {
   }
 
   registerHandlers() {
+    this.api.on("player_join", () => this._initialApiKeyCheck());
     this.api.on("chat", (event) => this.onChat(event));
     this.api.on("respawn", () => this.onWorldChange());
 
@@ -69,6 +70,30 @@ class BedWarsUtilities {
         .argument("<apikey>", { description: "Your Polsu API key" })
         .handler((ctx) => this.commandHandler.handleSetPolsuCommand(ctx));
     });
+  }
+
+  async _initialApiKeyCheck() {
+    setTimeout(async () => {
+      const result = await this.apiService.testHypixelApiKey();
+
+      if (result.isValid) {
+        this.api.sendTitle(
+          "§6BW Utilities",
+          "§aHypixel API key is functional!",
+          10, // Fade in (ticks)
+          40, // Stay (ticks)
+          10 // Fade out (ticks)
+        );
+      } else {
+        this.api.sendTitle(
+          "§6BW Utilities",
+          "§cHypixel API key is not functional! Please set a valid key",
+          10, // Fade in (ticks)
+          40, // Stay (ticks)
+          10 // Fade out (ticks)
+        );
+      }
+    }, 3000);
   }
 
   async onChat(event) {
@@ -141,4 +166,3 @@ class BedWarsUtilities {
 }
 
 module.exports = BedWarsUtilities;
-
