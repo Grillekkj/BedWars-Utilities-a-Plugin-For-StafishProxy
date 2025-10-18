@@ -244,9 +244,23 @@ class StatsFormatter {
 
   _buildStatsParts(stats, ping, mode) {
     const config = this.api.config.get("stats");
+    const isTabMode = mode === "tab";
 
     return STAT_DEFINITIONS.reduce((parts, definition) => {
-      if (config[definition.configKey]) {
+      const statConfig = config[definition.configKey];
+
+      if (!statConfig?.enabled) {
+        return parts;
+      }
+
+      const displayMode = statConfig.displayMode;
+
+      const shouldShow =
+        displayMode === "both" ||
+        (displayMode === "chat" && !isTabMode) ||
+        (displayMode === "tab" && isTabMode);
+
+      if (shouldShow) {
         const part = this[definition.formatter]({
           stats,
           ping,
@@ -293,4 +307,3 @@ class StatsFormatter {
 }
 
 module.exports = StatsFormatter;
-
