@@ -1,8 +1,8 @@
 const BedWarsUtilities = require("./bw-utilities-src/BedWarsUtilities");
 const configSchema = require("./bw-utilities-src/config/configSchema");
 
-module.exports = (api) => {
-  process.on("uncaughtException", (err, origin) => {
+module.exports = function BedWarsUtilitiesPlugin(api) {
+  process.on("uncaughtException", (err, _origin) => {
     console.error(`[BWU FATAL] UNHANDLED ERROR: ${err.stack}`);
   });
 
