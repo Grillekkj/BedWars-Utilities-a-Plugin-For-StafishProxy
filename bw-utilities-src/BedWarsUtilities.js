@@ -6,6 +6,7 @@ const CommandHandler = require("./handlers/CommandHandler");
 const GameHandler = require("./handlers/GameHandler");
 const TeamRanking = require("./services/TeamRanking");
 const TabManager = require("./services/TabManager");
+const PartyFinder = require("./services/PartyFinder");
 
 class BedWarsUtilities {
   constructor(api) {
@@ -14,6 +15,7 @@ class BedWarsUtilities {
     this.apiService = new ApiService(api, this.cacheManager);
     this.statsFormatter = new StatsFormatter(api);
     this.teamRanking = new TeamRanking(api, this.apiService);
+    this.partyFinder = new PartyFinder(api, this.apiService);
     this.tabManager = new TabManager(api, this.apiService, this.statsFormatter);
     this.chatHandler = new ChatHandler(
       api,
@@ -25,7 +27,8 @@ class BedWarsUtilities {
     this.commandHandler = new CommandHandler(
       api,
       this.tabManager,
-      this.chatHandler
+      this.chatHandler,
+      this.partyFinder
     );
     this.gameHandler = new GameHandler(api, this.chatHandler, this.tabManager);
     this.autoStatsMode = false;
@@ -41,6 +44,27 @@ class BedWarsUtilities {
     this.api.on("respawn", () => this.onWorldChange());
 
     this.api.commands((registry) => {
+      registry
+        .command("find")
+        .description("Finds players for your party based on criteria.")
+        .argument("<mode>", { description: "Mode (2, 3, 4) or 'stop'" })
+        .argument("[playersToFind]", {
+          description: "Number of players to find",
+          // Not rlly optional, just so ppl can /bwu find stop
+          optional: true,
+        })
+        .argument("[fkdrThreshold]", {
+          description: "Minimum FKDR required",
+          // Not rlly optional, just so ppl can /bwu find stop
+          optional: true,
+        })
+        .argument("positions", {
+          description: "Optional positions",
+          optional: true,
+          type: "greedy",
+        })
+        .handler((ctx) => this.commandHandler.handleFindCommand(ctx));
+
       registry
         .command("stats")
         .description("Shows the Bedwars statistics for a player.")
@@ -99,6 +123,10 @@ class BedWarsUtilities {
   async onChat(event) {
     try {
       const cleanMessage = event.message.replace(/§[0-9a-fk-or]/g, "");
+
+      if (this.partyFinder.isActive) {
+        this.partyFinder.handleChatMessage(cleanMessage);
+      }
 
       await this.gameHandler.handleGameStart(
         cleanMessage,
