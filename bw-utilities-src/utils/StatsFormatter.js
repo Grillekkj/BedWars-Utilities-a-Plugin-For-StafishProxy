@@ -256,6 +256,19 @@ class StatsFormatter {
     return `§f`;
   }
 
+  _getPrefix(mode, definition) {
+    if (mode === "chat") {
+      return definition.chatPrefix ?? "";
+    }
+    const showPrefix = this.api.config.get(
+      `stats.${definition.configKey}.showPrefix`
+    );
+    if (showPrefix) {
+      return definition.tabPrefix ?? "";
+    }
+    return "";
+  }
+
   _formatStars({ stats }) {
     return this._getPrestigeTag(stats.stars);
   }
@@ -266,8 +279,7 @@ class StatsFormatter {
       stats.fkdr !== undefined && stats.fkdr !== null
         ? stats.fkdr.toFixed(2)
         : "§c?";
-    const prefix =
-      (mode === "chat" ? definition.chatPrefix : definition.tabPrefix) ?? "";
+    const prefix = this._getPrefix(mode, definition);
     return `${prefix}${fkdrColor}${fkdrValue}`;
   }
 
@@ -277,21 +289,25 @@ class StatsFormatter {
       stats.wlr !== undefined && stats.wlr !== null
         ? stats.wlr.toFixed(2)
         : "§c?";
-    const prefix =
-      (mode === "chat" ? definition.chatPrefix : definition.tabPrefix) ?? "";
+    const prefix = this._getPrefix(mode, definition);
     return `${prefix}${wlrColor}${wlrValue}`;
   }
 
   _formatSimpleStat({ stats, mode, definition }) {
     const value = stats[definition.dataKey];
-    const prefix =
-      (mode === "chat" ? definition.chatPrefix : definition.tabPrefix) ?? "";
-    return `${prefix}${value !== undefined && value !== null ? value : "§c?"}`;
+    const prefix = this._getPrefix(mode, definition);
+    const valueStr = value !== undefined && value !== null ? value : "§c?";
+    if (
+      definition.configKey === "showWins" ||
+      definition.configKey === "showLosses"
+    ) {
+      return `${prefix}${valueStr}`;
+    }
+    return `${prefix}${valueStr}`;
   }
 
   _formatPing({ ping, mode, definition }) {
-    const prefix =
-      (mode === "chat" ? definition.chatPrefix : definition.tabPrefix) ?? "";
+    const prefix = this._getPrefix(mode, definition);
     const value = typeof ping === "number" ? `§a${ping}ms` : "§c?";
     return `${prefix}${value}`;
   }
