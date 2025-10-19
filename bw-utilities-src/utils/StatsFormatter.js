@@ -46,7 +46,7 @@ class StatsFormatter {
     const starStr = stars.toString();
     const firstDigit = starStr.charAt(0);
     const middleDigits = starStr.substring(1, starStr.length - 1);
-    const lastDigit = starStr.charAt(starStr.length - 1);
+    const lastDigit = starStr.at(-1);
 
     return `${colorPattern[0]}${firstDigit}${colorPattern[1]}${middleDigits}${colorPattern[2]}${lastDigit}`;
   }
