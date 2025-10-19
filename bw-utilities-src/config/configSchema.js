@@ -158,7 +158,7 @@ module.exports = [
     defaults: {
       autoRequeue: {
         enabled: false,
-        fkdrThreshold: 5.0,
+        fkdrThreshold: 5,
       },
     },
     settings: [
