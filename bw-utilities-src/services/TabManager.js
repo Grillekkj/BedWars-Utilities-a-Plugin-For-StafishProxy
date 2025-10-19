@@ -20,8 +20,26 @@ class TabManager {
 
   async addPlayerStatsToTab(originalPlayerName, resolvedPlayerName) {
     try {
-      const player = this.api.getPlayerByName(originalPlayerName);
-      if (!player?.uuid) return;
+      let player = null;
+      const me = this.api.getCurrentPlayer();
+      const myRealName = me ? me.name : null;
+
+      if (
+        myRealName &&
+        resolvedPlayerName.toLowerCase() === myRealName.toLowerCase()
+      ) {
+        player = me;
+        const playerByNick = this.api.getPlayerByName(originalPlayerName);
+        if (playerByNick) {
+          player.uuid = playerByNick.uuid;
+        }
+      } else {
+        player = this.api.getPlayerByName(originalPlayerName);
+      }
+
+      if (!player?.uuid) {
+        return;
+      }
       if (this.managedPlayers.has(originalPlayerName)) return;
 
       const finalNameForStats = resolvedPlayerName || originalPlayerName;
