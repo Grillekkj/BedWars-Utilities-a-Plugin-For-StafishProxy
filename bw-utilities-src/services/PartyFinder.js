@@ -113,7 +113,7 @@ class PartyFinder {
     this.api.chat(
       `${this.api.getPrefix()} §eLooking for player ${
         this.state.foundPlayers.length + 1
-      }/${this.state.playersToFind} (Pos: ${position}). Sending: ${message}`
+      }/${this.state.playersToFind} (Role: ${position}). Sending: ${message}`
     );
     this.api.sendChatToServer(message);
 
