@@ -119,7 +119,7 @@ class PartyFinder {
 
     const isLastSuffix =
       this.state.currentSuffixIndex === this.messageSuffixes.length - 1;
-    const nextDelay = isLastSuffix ? 10000 : 7000;
+    const nextDelay = isLastSuffix ? 15000 : 10000;
 
     this.messageLoopTimeout = setTimeout(
       () => this.startMessageLoop(),
