@@ -1,8 +1,9 @@
 class TabManager {
-  constructor(api, apiService, statsFormatter) {
+  constructor(api, apiService, statsFormatter, bwuInstance) {
     this.api = api;
     this.apiService = apiService;
     this.statsFormatter = statsFormatter;
+    this.bwu = bwuInstance;
     this.managedPlayers = new Map();
   }
 
@@ -17,37 +18,46 @@ class TabManager {
     }
   }
 
-  async addPlayerStatsToTab(playerName) {
+  async addPlayerStatsToTab(originalPlayerName, resolvedPlayerName) {
     try {
-      const player = this.api.getPlayerByName(playerName);
+      const player = this.api.getPlayerByName(originalPlayerName);
       if (!player?.uuid) return;
-      if (this.managedPlayers.has(playerName)) return;
+      if (this.managedPlayers.has(originalPlayerName)) return;
 
-      const promises = [this.apiService.getPlayerStats(playerName)];
+      const finalNameForStats = resolvedPlayerName || originalPlayerName;
 
-      if (this.api.config.get("stats.showPing") && player.uuid) {
-        promises.push(this.apiService.getPlayerPing(player.uuid));
+      const promises = [this.apiService.getPlayerStats(finalNameForStats)];
+
+      if (this.api.config.get("stats.showPing")) {
+        const pingPromise = (async () => {
+          const realUuid = await this.apiService.getUuid(finalNameForStats);
+          if (realUuid) {
+            return this.apiService.getPlayerPing(realUuid);
+          }
+          return null;
+        })();
+        promises.push(pingPromise);
       } else {
         promises.push(Promise.resolve(null));
       }
 
       const [stats, ping] = await Promise.all(promises);
-      //suffix
+
       const statsSuffix = this.statsFormatter.formatStats(
         "tab",
-        null,
+        finalNameForStats,
         stats,
         ping
       );
 
       this.api.setDisplayNameSuffix(player.uuid, statsSuffix);
-      this.managedPlayers.set(playerName, {
+      this.managedPlayers.set(originalPlayerName, {
         type: "auto-stats",
         uuid: player.uuid,
       });
     } catch (error) {
       console.error(
-        `[BWU] Failed to add stats to tab for ${playerName}: ${error.stack}`
+        `[BWU] Failed to add stats to tab for ${originalPlayerName}: ${error.stack}`
       );
     }
   }
