@@ -14,9 +14,15 @@ class BedWarsUtilities {
     this.cacheManager = new CacheManager(api);
     this.apiService = new ApiService(api, this.cacheManager);
     this.statsFormatter = new StatsFormatter(api);
-    this.teamRanking = new TeamRanking(api, this.apiService);
+    this.teamRanking = new TeamRanking(api, this.apiService, this);
     this.partyFinder = new PartyFinder(api, this.apiService);
-    this.tabManager = new TabManager(api, this.apiService, this.statsFormatter);
+    this.tabManager = new TabManager(
+      api,
+      this.apiService,
+      this.statsFormatter,
+      this
+    );
+
     this.chatHandler = new ChatHandler(
       api,
       this.apiService,
@@ -36,12 +42,24 @@ class BedWarsUtilities {
     this.lastCleanMessage = null;
     this.requeueTriggered = false;
     this.rankingSentThisMatch = false;
+    this.resolvedNicks = new Map();
+    this.realNameToNickMap = new Map();
+  }
+
+  _getDenickerInstance() {
+    try {
+      return this.api.getPluginInstance("denicker");
+    } catch (e) {
+      console.warn(`[BWU] Failed to get denicker instance: ${e?.stack ?? e}`);
+      return null;
+    }
   }
 
   registerHandlers() {
     this.api.on("player_join", () => this._initialApiKeyCheck());
     this.api.on("chat", (event) => this.onChat(event));
     this.api.on("respawn", () => this.onWorldChange());
+    this.api.on("denicker:nick_resolved", (data) => this.onNickResolved(data));
 
     this.api.commands((registry) => {
       registry
@@ -96,10 +114,18 @@ class BedWarsUtilities {
     });
   }
 
+  onNickResolved({ nickName, realName }) {
+    this.resolvedNicks.set(nickName.toLowerCase(), realName);
+    this.realNameToNickMap.set(realName.toLowerCase(), nickName);
+
+    if (this.tabManager.managedPlayers.has(nickName)) {
+      this.tabManager.addPlayerStatsToTab(nickName, realName);
+    }
+  }
+
   async _initialApiKeyCheck() {
     setTimeout(async () => {
       const result = await this.apiService.testHypixelApiKey();
-
       if (result.isValid) {
         this.api.sendTitle(
           "§6BW Utilities",
@@ -144,11 +170,31 @@ class BedWarsUtilities {
           );
         }
         this.tabManager.clearManagedPlayers("all");
-        const players = whoMatch[1]
+
+        const originalPlayerNames = whoMatch[1]
           .split(", ")
           .map((p) => p.trim())
           .filter(Boolean);
-        await this.processPlayerData(players);
+
+        const denicker = this._getDenickerInstance();
+
+        const resolvedPlayerNames = originalPlayerNames.map((nickName) => {
+          let realName = this.resolvedNicks.get(nickName.toLowerCase());
+
+          if (!realName && denicker) {
+            realName = denicker.getRealName(nickName);
+          }
+
+          const finalName = realName || nickName;
+
+          if (nickName.toLowerCase() !== finalName.toLowerCase()) {
+            this.realNameToNickMap.set(finalName.toLowerCase(), nickName);
+          }
+
+          return finalName;
+        });
+
+        await this.processPlayerData(originalPlayerNames, resolvedPlayerNames);
         return;
       }
 
@@ -171,6 +217,8 @@ class BedWarsUtilities {
     this.lastCleanMessage = null;
     this.requeueTriggered = false;
     this.rankingSentThisMatch = false;
+    this.resolvedNicks.clear();
+    this.realNameToNickMap.clear();
 
     if (this.autoStatsMode) {
       this.autoStatsMode = false;
@@ -179,13 +227,15 @@ class BedWarsUtilities {
     }
   }
 
-  async processPlayerData(playerNames) {
-    for (const playerName of playerNames) {
-      this.tabManager.addPlayerStatsToTab(playerName);
+  async processPlayerData(originalPlayerNames, resolvedPlayerNames) {
+    for (let i = 0; i < originalPlayerNames.length; i++) {
+      const originalName = originalPlayerNames[i];
+      const resolvedName = resolvedPlayerNames[i];
+      this.tabManager.addPlayerStatsToTab(originalName, resolvedName);
     }
 
     await this.teamRanking.processAndDisplayRanking(
-      playerNames,
+      originalPlayerNames,
       this.rankingSentThisMatch
     );
 
