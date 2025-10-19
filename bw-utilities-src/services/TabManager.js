@@ -54,4 +54,3 @@ class TabManager {
 }
 
 module.exports = TabManager;
-
