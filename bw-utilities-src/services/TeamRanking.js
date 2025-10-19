@@ -19,7 +19,7 @@ class TeamRanking {
     if (isPrivate) {
       this.api.chat(message);
     } else {
-      const cleanMessage = message.replace(/§[0-9a-fk-or]/g, "");
+      const cleanMessage = message.replaceAll(/§[0-9a-fk-or]/g, "");
       this.api.sendChatToServer(`/ac ${cleanMessage}`);
     }
   }
@@ -94,9 +94,7 @@ class TeamRanking {
 
         const stats = await this.apiService.getPlayerStats(playerName);
         const fkdr =
-          stats && !stats.isNicked && stats.fkdr !== undefined
-            ? stats.fkdr
-            : 5.0;
+          stats && !stats.isNicked && stats.fkdr !== undefined ? stats.fkdr : 5;
         const stars =
           stats && !stats.isNicked && stats.stars !== undefined
             ? stats.stars
@@ -217,4 +215,3 @@ class TeamRanking {
 }
 
 module.exports = TeamRanking;
-
