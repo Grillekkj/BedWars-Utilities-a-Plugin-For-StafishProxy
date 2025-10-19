@@ -8,6 +8,7 @@
 ## ✨ Main Features
 
 - **Player Stats Display:** Shows stars, FKDR, beds, winstreak, and more — in chat or TAB.  
+- **Auto Lobby 1 Party:** Search for partys lobby 1 FOR YOU. `/bwu find`
 - **Auto Stats in Lobby:** Instantly see stats of anyone who talks in pre-game.  
 - **Mention Stats:** Displays stats of anyone who mentions your name.  
 - **Auto /who + Team Threat Ranking:** Automatically lists players and ranks enemy teams by their combined FKDR & stars.  
