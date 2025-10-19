@@ -115,6 +115,8 @@ class BedWarsUtilities {
   }
 
   onNickResolved({ nickName, realName }) {
+    if (this.resolvedNicks.has(nickName.toLowerCase())) return;
+
     this.resolvedNicks.set(nickName.toLowerCase(), realName);
     this.realNameToNickMap.set(realName.toLowerCase(), nickName);
 
