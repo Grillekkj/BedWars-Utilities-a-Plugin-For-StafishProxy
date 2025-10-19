@@ -7,6 +7,26 @@ const STAT_DEFINITIONS = [
     tabPrefix: "§9FKDR ",
   },
   {
+    configKey: "showWlr",
+    formatter: "_formatWlr",
+    chatPrefix: "§bWLR: ",
+    tabPrefix: "§bWLR ",
+  },
+  {
+    configKey: "showWins",
+    dataKey: "wins",
+    formatter: "_formatSimpleStat",
+    chatPrefix: "§aWins: ",
+    tabPrefix: "§aW ",
+  },
+  {
+    configKey: "showLosses",
+    dataKey: "losses",
+    formatter: "_formatSimpleStat",
+    chatPrefix: "§cLosses: ",
+    tabPrefix: "§cL ",
+  },
+  {
     configKey: "showFK",
     dataKey: "final_kills",
     formatter: "_formatSimpleStat",
@@ -213,6 +233,29 @@ class StatsFormatter {
     return `§f`;
   }
 
+  _applyWlrColor(value) {
+    if (value === undefined || value === null) return "§c";
+    const rules = [
+      { max: 0.49, color: "§7" },
+      { max: 0.99, color: "§f" },
+      { max: 1.99, color: "§a" },
+      { max: 3.99, color: "§e" },
+      { max: 5.99, color: "§6" },
+      { max: 9.99, color: "§d" },
+      { min: 10, color: "§5" },
+    ];
+
+    for (const rule of rules) {
+      if (
+        (rule.min === undefined || value >= rule.min) &&
+        (rule.max === undefined || value <= rule.max)
+      ) {
+        return rule.color;
+      }
+    }
+    return `§f`;
+  }
+
   _formatStars({ stats }) {
     return this._getPrestigeTag(stats.stars);
   }
@@ -226,6 +269,17 @@ class StatsFormatter {
     const prefix =
       (mode === "chat" ? definition.chatPrefix : definition.tabPrefix) ?? "";
     return `${prefix}${fkdrColor}${fkdrValue}`;
+  }
+
+  _formatWlr({ stats, mode, definition }) {
+    const wlrColor = this._applyWlrColor(stats.wlr);
+    const wlrValue =
+      stats.wlr !== undefined && stats.wlr !== null
+        ? stats.wlr.toFixed(2)
+        : "§c?";
+    const prefix =
+      (mode === "chat" ? definition.chatPrefix : definition.tabPrefix) ?? "";
+    return `${prefix}${wlrColor}${wlrValue}`;
   }
 
   _formatSimpleStat({ stats, mode, definition }) {
