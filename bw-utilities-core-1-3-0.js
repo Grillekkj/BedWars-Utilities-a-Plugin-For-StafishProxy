@@ -14,6 +14,10 @@ module.exports = function BedWarsUtilitiesPlugin(api) {
     author: "Grille (silly_brazil)",
     description:
       "A versatile Bedwars plugin offering a variety of useful features to enhance gameplay.",
+    optionalDependencies: [
+      { name: "denicker", minVersion: "1.1.0" },
+      { name: "numdenicker", minVersion: "1.0.3" },
+    ],
   });
 
   const bwu = new BedWarsUtilities(api);
