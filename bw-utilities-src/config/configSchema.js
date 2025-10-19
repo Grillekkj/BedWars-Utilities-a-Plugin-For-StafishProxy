@@ -189,7 +189,12 @@ module.exports = [
     description: "Show the level (stars).",
     defaults: {
       stats: {
-        showStars: { enabled: true, displayMode: "both", showPrefix: true },
+        showStars: {
+          enabled: true,
+          displayMode: "both",
+          showPrefix: true,
+          prefixColor: "§7",
+        },
       },
     },
     settings: [
@@ -216,7 +221,12 @@ module.exports = [
     description: "Show the Final Kills / Deaths ratio.",
     defaults: {
       stats: {
-        showFkdr: { enabled: true, displayMode: "both", showPrefix: true },
+        showFkdr: {
+          enabled: true,
+          displayMode: "both",
+          showPrefix: true,
+          prefixColor: "§7",
+        },
       },
     },
     settings: [
@@ -245,6 +255,29 @@ module.exports = [
           { text: "Prefix OFF", value: false },
         ],
       },
+      {
+        key: "stats.showFkdr.prefixColor",
+        type: "cycle",
+        description: "Prefix color in chat and tab.",
+        values: [
+          { text: "§0Black", value: "§0" },
+          { text: "§1Dark Blue", value: "§1" },
+          { text: "§2Dark Green", value: "§2" },
+          { text: "§3Dark Aqua", value: "§3" },
+          { text: "§4Dark Red", value: "§4" },
+          { text: "§5Dark Purple", value: "§5" },
+          { text: "§6Gold", value: "§6" },
+          { text: "§7Gray", value: "§7" },
+          { text: "§8Dark Gray", value: "§8" },
+          { text: "§9Blue", value: "§9" },
+          { text: "§aGreen", value: "§a" },
+          { text: "§bAqua", value: "§b" },
+          { text: "§cRed", value: "§c" },
+          { text: "§dLight Purple", value: "§d" },
+          { text: "§eYellow", value: "§e" },
+          { text: "§fWhite", value: "§f" },
+        ],
+      },
     ],
   },
   {
@@ -252,7 +285,12 @@ module.exports = [
     description: "Show the total Final Kills.",
     defaults: {
       stats: {
-        showFK: { enabled: true, displayMode: "both", showPrefix: true },
+        showFK: {
+          enabled: true,
+          displayMode: "both",
+          showPrefix: true,
+          prefixColor: "§7",
+        },
       },
     },
     settings: [
@@ -281,6 +319,29 @@ module.exports = [
           { text: "Prefix OFF", value: false },
         ],
       },
+      {
+        key: "stats.showFK.prefixColor",
+        type: "cycle",
+        description: "Prefix color in chat and tab.",
+        values: [
+          { text: "§0Black", value: "§0" },
+          { text: "§1Dark Blue", value: "§1" },
+          { text: "§2Dark Green", value: "§2" },
+          { text: "§3Dark Aqua", value: "§3" },
+          { text: "§4Dark Red", value: "§4" },
+          { text: "§5Dark Purple", value: "§5" },
+          { text: "§6Gold", value: "§6" },
+          { text: "§7Gray", value: "§7" },
+          { text: "§8Dark Gray", value: "§8" },
+          { text: "§9Blue", value: "§9" },
+          { text: "§aGreen", value: "§a" },
+          { text: "§bAqua", value: "§b" },
+          { text: "§cRed", value: "§c" },
+          { text: "§dLight Purple", value: "§d" },
+          { text: "§eYellow", value: "§e" },
+          { text: "§fWhite", value: "§f" },
+        ],
+      },
     ],
   },
   {
@@ -288,7 +349,12 @@ module.exports = [
     description: "Show the total Final Deaths.",
     defaults: {
       stats: {
-        showFD: { enabled: true, displayMode: "both", showPrefix: true },
+        showFD: {
+          enabled: true,
+          displayMode: "both",
+          showPrefix: true,
+          prefixColor: "§7",
+        },
       },
     },
     settings: [
@@ -317,6 +383,29 @@ module.exports = [
           { text: "Prefix OFF", value: false },
         ],
       },
+      {
+        key: "stats.showFD.prefixColor",
+        type: "cycle",
+        description: "Prefix color in chat and tab.",
+        values: [
+          { text: "§0Black", value: "§0" },
+          { text: "§1Dark Blue", value: "§1" },
+          { text: "§2Dark Green", value: "§2" },
+          { text: "§3Dark Aqua", value: "§3" },
+          { text: "§4Dark Red", value: "§4" },
+          { text: "§5Dark Purple", value: "§5" },
+          { text: "§6Gold", value: "§6" },
+          { text: "§7Gray", value: "§7" },
+          { text: "§8Dark Gray", value: "§8" },
+          { text: "§9Blue", value: "§9" },
+          { text: "§aGreen", value: "§a" },
+          { text: "§bAqua", value: "§b" },
+          { text: "§cRed", value: "§c" },
+          { text: "§dLight Purple", value: "§d" },
+          { text: "§eYellow", value: "§e" },
+          { text: "§fWhite", value: "§f" },
+        ],
+      },
     ],
   },
   {
@@ -324,7 +413,12 @@ module.exports = [
     description: "Show the Win / Loss ratio.",
     defaults: {
       stats: {
-        showWlr: { enabled: true, displayMode: "chat", showPrefix: true },
+        showWlr: {
+          enabled: true,
+          displayMode: "chat",
+          showPrefix: true,
+          prefixColor: "§7",
+        },
       },
     },
     settings: [
@@ -353,6 +447,29 @@ module.exports = [
           { text: "Prefix OFF", value: false },
         ],
       },
+      {
+        key: "stats.showWlr.prefixColor",
+        type: "cycle",
+        description: "Prefix color in chat and tab.",
+        values: [
+          { text: "§0Black", value: "§0" },
+          { text: "§1Dark Blue", value: "§1" },
+          { text: "§2Dark Green", value: "§2" },
+          { text: "§3Dark Aqua", value: "§3" },
+          { text: "§4Dark Red", value: "§4" },
+          { text: "§5Dark Purple", value: "§5" },
+          { text: "§6Gold", value: "§6" },
+          { text: "§7Gray", value: "§7" },
+          { text: "§8Dark Gray", value: "§8" },
+          { text: "§9Blue", value: "§9" },
+          { text: "§aGreen", value: "§a" },
+          { text: "§bAqua", value: "§b" },
+          { text: "§cRed", value: "§c" },
+          { text: "§dLight Purple", value: "§d" },
+          { text: "§eYellow", value: "§e" },
+          { text: "§fWhite", value: "§f" },
+        ],
+      },
     ],
   },
   {
@@ -360,7 +477,12 @@ module.exports = [
     description: "Show the total Wins.",
     defaults: {
       stats: {
-        showWins: { enabled: true, displayMode: "chat", showPrefix: true },
+        showWins: {
+          enabled: true,
+          displayMode: "chat",
+          showPrefix: true,
+          prefixColor: "§7",
+        },
       },
     },
     settings: [
@@ -389,6 +511,29 @@ module.exports = [
           { text: "Prefix OFF", value: false },
         ],
       },
+      {
+        key: "stats.showWins.prefixColor",
+        type: "cycle",
+        description: "Prefix color in chat and tab.",
+        values: [
+          { text: "§0Black", value: "§0" },
+          { text: "§1Dark Blue", value: "§1" },
+          { text: "§2Dark Green", value: "§2" },
+          { text: "§3Dark Aqua", value: "§3" },
+          { text: "§4Dark Red", value: "§4" },
+          { text: "§5Dark Purple", value: "§5" },
+          { text: "§6Gold", value: "§6" },
+          { text: "§7Gray", value: "§7" },
+          { text: "§8Dark Gray", value: "§8" },
+          { text: "§9Blue", value: "§9" },
+          { text: "§aGreen", value: "§a" },
+          { text: "§bAqua", value: "§b" },
+          { text: "§cRed", value: "§c" },
+          { text: "§dLight Purple", value: "§d" },
+          { text: "§eYellow", value: "§e" },
+          { text: "§fWhite", value: "§f" },
+        ],
+      },
     ],
   },
   {
@@ -396,7 +541,12 @@ module.exports = [
     description: "Show the total Losses.",
     defaults: {
       stats: {
-        showLosses: { enabled: true, displayMode: "chat", showPrefix: true },
+        showLosses: {
+          enabled: true,
+          displayMode: "chat",
+          showPrefix: true,
+          prefixColor: "§7",
+        },
       },
     },
     settings: [
@@ -425,6 +575,29 @@ module.exports = [
           { text: "Prefix OFF", value: false },
         ],
       },
+      {
+        key: "stats.showLosses.prefixColor",
+        type: "cycle",
+        description: "Prefix color in chat and tab.",
+        values: [
+          { text: "§0Black", value: "§0" },
+          { text: "§1Dark Blue", value: "§1" },
+          { text: "§2Dark Green", value: "§2" },
+          { text: "§3Dark Aqua", value: "§3" },
+          { text: "§4Dark Red", value: "§4" },
+          { text: "§5Dark Purple", value: "§5" },
+          { text: "§6Gold", value: "§6" },
+          { text: "§7Gray", value: "§7" },
+          { text: "§8Dark Gray", value: "§8" },
+          { text: "§9Blue", value: "§9" },
+          { text: "§aGreen", value: "§a" },
+          { text: "§bAqua", value: "§b" },
+          { text: "§cRed", value: "§c" },
+          { text: "§dLight Purple", value: "§d" },
+          { text: "§eYellow", value: "§e" },
+          { text: "§fWhite", value: "§f" },
+        ],
+      },
     ],
   },
   {
@@ -432,7 +605,12 @@ module.exports = [
     description: "Show the current Winstreak",
     defaults: {
       stats: {
-        showWinstreak: { enabled: true, displayMode: "both", showPrefix: true },
+        showWinstreak: {
+          enabled: true,
+          displayMode: "both",
+          showPrefix: true,
+          prefixColor: "§7",
+        },
       },
     },
     settings: [
@@ -461,6 +639,29 @@ module.exports = [
           { text: "Prefix OFF", value: false },
         ],
       },
+      {
+        key: "stats.showWinstreak.prefixColor",
+        type: "cycle",
+        description: "Prefix color in chat and tab.",
+        values: [
+          { text: "§0Black", value: "§0" },
+          { text: "§1Dark Blue", value: "§1" },
+          { text: "§2Dark Green", value: "§2" },
+          { text: "§3Dark Aqua", value: "§3" },
+          { text: "§4Dark Red", value: "§4" },
+          { text: "§5Dark Purple", value: "§5" },
+          { text: "§6Gold", value: "§6" },
+          { text: "§7Gray", value: "§7" },
+          { text: "§8Dark Gray", value: "§8" },
+          { text: "§9Blue", value: "§9" },
+          { text: "§aGreen", value: "§a" },
+          { text: "§bAqua", value: "§b" },
+          { text: "§cRed", value: "§c" },
+          { text: "§dLight Purple", value: "§d" },
+          { text: "§eYellow", value: "§e" },
+          { text: "§fWhite", value: "§f" },
+        ],
+      },
     ],
   },
   {
@@ -468,7 +669,12 @@ module.exports = [
     description: "Show the total Beds Broken.",
     defaults: {
       stats: {
-        showBeds: { enabled: true, displayMode: "both", showPrefix: true },
+        showBeds: {
+          enabled: true,
+          displayMode: "both",
+          showPrefix: true,
+          prefixColor: "§7",
+        },
       },
     },
     settings: [
@@ -497,6 +703,29 @@ module.exports = [
           { text: "Prefix OFF", value: false },
         ],
       },
+      {
+        key: "stats.showBeds.prefixColor",
+        type: "cycle",
+        description: "Prefix color in chat and tab.",
+        values: [
+          { text: "§0Black", value: "§0" },
+          { text: "§1Dark Blue", value: "§1" },
+          { text: "§2Dark Green", value: "§2" },
+          { text: "§3Dark Aqua", value: "§3" },
+          { text: "§4Dark Red", value: "§4" },
+          { text: "§5Dark Purple", value: "§5" },
+          { text: "§6Gold", value: "§6" },
+          { text: "§7Gray", value: "§7" },
+          { text: "§8Dark Gray", value: "§8" },
+          { text: "§9Blue", value: "§9" },
+          { text: "§aGreen", value: "§a" },
+          { text: "§bAqua", value: "§b" },
+          { text: "§cRed", value: "§c" },
+          { text: "§dLight Purple", value: "§d" },
+          { text: "§eYellow", value: "§e" },
+          { text: "§fWhite", value: "§f" },
+        ],
+      },
     ],
   },
   {
@@ -504,7 +733,12 @@ module.exports = [
     description: "Show the player's ping (requires Polsu API).",
     defaults: {
       stats: {
-        showPing: { enabled: true, displayMode: "both", showPrefix: true },
+        showPing: {
+          enabled: true,
+          displayMode: "both",
+          showPrefix: true,
+          prefixColor: "§7",
+        },
       },
     },
     settings: [
@@ -522,6 +756,29 @@ module.exports = [
           { text: "Chat", value: "chat" },
           { text: "Tab", value: "tab" },
           { text: "Both", value: "both" },
+        ],
+      },
+      {
+        key: "stats.showPing.prefixColor",
+        type: "cycle",
+        description: "Prefix color in chat and tab.",
+        values: [
+          { text: "§0Black", value: "§0" },
+          { text: "§1Dark Blue", value: "§1" },
+          { text: "§2Dark Green", value: "§2" },
+          { text: "§3Dark Aqua", value: "§3" },
+          { text: "§4Dark Red", value: "§4" },
+          { text: "§5Dark Purple", value: "§5" },
+          { text: "§6Gold", value: "§6" },
+          { text: "§7Gray", value: "§7" },
+          { text: "§8Dark Gray", value: "§8" },
+          { text: "§9Blue", value: "§9" },
+          { text: "§aGreen", value: "§a" },
+          { text: "§bAqua", value: "§b" },
+          { text: "§cRed", value: "§c" },
+          { text: "§dLight Purple", value: "§d" },
+          { text: "§eYellow", value: "§e" },
+          { text: "§fWhite", value: "§f" },
         ],
       },
     ],
