@@ -122,7 +122,7 @@ class BedWarsUtilities {
 
   async onChat(event) {
     try {
-      const cleanMessage = event.message.replace(/§[0-9a-fk-or]/g, "");
+      const cleanMessage = event.message.replaceAll(/§[0-9a-fk-or]/g, "");
 
       if (this.partyFinder.isActive) {
         this.partyFinder.handleChatMessage(cleanMessage);
@@ -180,9 +180,9 @@ class BedWarsUtilities {
   }
 
   async processPlayerData(playerNames) {
-    playerNames.forEach((playerName) =>
-      this.tabManager.addPlayerStatsToTab(playerName)
-    );
+    for (const playerName of playerNames) {
+      this.tabManager.addPlayerStatsToTab(playerName);
+    }
 
     await this.teamRanking.processAndDisplayRanking(
       playerNames,
