@@ -1,10 +1,14 @@
 module.exports = [
   {
     label: "API - Hypixel",
-    description: "Set your Hypixel API key. Use: /bwu setkey <key>",
+    description:
+      "Set your Hypixel API key and cache duration. Use: /bwu setkey <key>",
     defaults: {
       main: {
         hypixelApiKey: "YOUR_HYPIXEL_API_KEY_HERE",
+      },
+      performance: {
+        cacheTTL: 300,
       },
     },
     settings: [
@@ -14,14 +18,32 @@ module.exports = [
         description:
           "Hypixel API key. Get one at https://developer.hypixel.net/. Use: /bwu setkey <key>",
       },
+      {
+        key: "performance.cacheTTL",
+        type: "cycle",
+        description: "Cache duration for stats. Recommended: 300s or more.",
+        values: [
+          { text: "60s", value: 60 },
+          { text: "120s", value: 120 },
+          { text: "180s", value: 180 },
+          { text: "240s", value: 240 },
+          { text: "300s (Recommended)", value: 300 },
+          { text: "360s", value: 360 },
+          { text: "420s", value: 420 },
+        ],
+      },
     ],
   },
   {
     label: "API - Polsu (Ping)",
-    description: "Set your Polsu API key. Use: /bwu setpolsu <key>",
+    description:
+      "Set your Polsu API key and cache duration. Use: /bwu setpolsu <key>",
     defaults: {
       main: {
         polsuApiKey: "YOUR_POLSU_API_KEY_HERE",
+      },
+      performance: {
+        pingCacheTTL: 60,
       },
     },
     settings: [
@@ -31,15 +53,30 @@ module.exports = [
         description:
           "Polsu API key for showing ping. Get one at polsu.xyz/api/apikey. Use: /bwu setpolsu <key>",
       },
+      {
+        key: "performance.pingCacheTTL",
+        type: "cycle",
+        description: "Cache duration for ping. Recommended: 60s.",
+        values: [
+          { text: "30s", value: 30 },
+          { text: "60s (Recommended)", value: 60 },
+          { text: "90s", value: 90 },
+          { text: "120s", value: 120 },
+        ],
+      },
     ],
   },
   {
     label: "Team Ranking",
     description:
-      "Automatically ranks enemy teams by threat level (FKDR and Stars) at the start of the match.",
+      "Automatically ranks enemy teams by threat level (FKDR and Stars).",
     defaults: {
       teamRanking: {
         enabled: true,
+        separateMessages: false,
+      },
+      privateRanking: {
+        alwaysPrivate: false,
       },
     },
     settings: [
@@ -49,42 +86,24 @@ module.exports = [
         text: ["OFF", "ON"],
         description: "Enable or disable automatic team ranking.",
       },
-    ],
-  },
-  {
-    label: "Private Ranking",
-    description:
-      "Force the team ranking message to always be sent privately to you.",
-    defaults: {
-      privateRanking: {
-        alwaysPrivate: false,
-      },
-    },
-    settings: [
       {
         key: "privateRanking.alwaysPrivate",
-        type: "toggle",
-        text: ["OFF", "ON"],
+        type: "cycle",
         description:
-          "If ON, the ranking message will be sent only to you (colored) in all game modes.",
+          "Force the ranking message to always be sent privately to you.",
+        values: [
+          { text: "Private: ON", value: true },
+          { text: "Private: OFF", value: false },
+        ],
       },
-    ],
-  },
-  {
-    label: "Separate Ranking Msgs",
-    description: "Display each team's ranking in a separate chat message.",
-    defaults: {
-      teamRanking: {
-        separateMessages: false,
-      },
-    },
-    settings: [
       {
         key: "teamRanking.separateMessages",
-        type: "toggle",
-        text: ["OFF", "ON"],
-        description:
-          "If ON, each team in the ranking will be sent as a separate message.",
+        type: "cycle",
+        description: "Display each team's ranking in a separate chat message.",
+        values: [
+          { text: "Separate Msgs: ON", value: true },
+          { text: "Separate Msgs: OFF", value: false },
+        ],
       },
     ],
   },
@@ -119,43 +138,11 @@ module.exports = [
     ],
   },
   {
-    label: "Stats on Mention",
-    description: "Show stats of the player who mentions your nickname in chat.",
-    defaults: {
-      mentionStats: { enabled: true },
-    },
-    settings: [
-      {
-        key: "mentionStats.enabled",
-        type: "toggle",
-        text: ["OFF", "ON"],
-        description:
-          "Shows the stats of anyone who mentions your nickname in chat (private to you).",
-      },
-    ],
-  },
-  {
-    label: "Automatic Stats (Pre-game lobby)",
-    description:
-      "Show stats of players who chat in the pre-game lobby (private to you).",
+    label: "Automatic Stats & Requeue",
+    description: "Automations for pre-game lobby analysis.",
     defaults: {
       autoStats: { enabled: true },
-    },
-    settings: [
-      {
-        key: "autoStats.enabled",
-        type: "toggle",
-        text: ["OFF", "ON"],
-        description:
-          "Show stats of players who chat in the pre-game lobby (private to you).",
-      },
-    ],
-  },
-  {
-    label: "Auto Requeue",
-    description:
-      "Automatically types /requeue if a player in the pre-game lobby has an FKDR above your defined limit.",
-    defaults: {
+      mentionStats: { enabled: true },
       autoRequeue: {
         enabled: false,
         fkdrThreshold: 5,
@@ -163,47 +150,37 @@ module.exports = [
     },
     settings: [
       {
+        key: "autoStats.enabled",
+        type: "cycle",
+        description: "Show stats of players who chat in the pre-game lobby.",
+        values: [
+          { text: "Lobby Stats: ON", value: true },
+          { text: "Lobby Stats: OFF", value: false },
+        ],
+      },
+      {
+        key: "mentionStats.enabled",
+        type: "cycle",
+        description: "Show stats of players who mention your nickname in chat.",
+        values: [
+          { text: "Mention Stats: ON", value: true },
+          { text: "Mention Stats: OFF", value: false },
+        ],
+      },
+      {
         key: "autoRequeue.enabled",
-        type: "toggle",
-        text: ["OFF", "ON"],
-        description: "Enable or disable automatic /requeue.",
+        type: "cycle",
+        description: "Enable auto /requeue based on FKDR.",
+        values: [
+          { text: "Auto Requeue: ON", value: true },
+          { text: "Auto Requeue: OFF", value: false },
+        ],
       },
       {
         key: "autoRequeue.fkdrThreshold",
         type: "text",
-        description: "The FKDR limit that will trigger a /requeue.",
-      },
-    ],
-  },
-  {
-    label: "Cache - Hypixel",
-    description: "Hypixel stats cache duration.",
-    defaults: {
-      performance: {
-        cacheTTL: 300,
-      },
-    },
-    settings: [
-      {
-        key: "performance.cacheTTL",
-        type: "text",
-        description: "Time in seconds. Recommended: 300 (5 minutes).",
-      },
-    ],
-  },
-  {
-    label: "Cache - Polsu",
-    description: "Polsu ping cache duration.",
-    defaults: {
-      performance: {
-        pingCacheTTL: 60,
-      },
-    },
-    settings: [
-      {
-        key: "performance.pingCacheTTL",
-        type: "text",
-        description: "Time in seconds. Recommended: 60 (1 minute).",
+        description:
+          "The FKDR limit that will trigger a /requeue. Use: /bwu setthreshold <fkdr>",
       },
     ],
   },
@@ -261,114 +238,6 @@ module.exports = [
       },
       {
         key: "stats.showFkdr.showPrefix",
-        type: "cycle",
-        description: "Show prefix in tab.",
-        values: [
-          { text: "Prefix ON", value: true },
-          { text: "Prefix OFF", value: false },
-        ],
-      },
-    ],
-  },
-  {
-    label: "Stats - Wins",
-    description: "Show the total Wins.",
-    defaults: {
-      stats: {
-        showWins: { enabled: true, displayMode: "chat", showPrefix: true },
-      },
-    },
-    settings: [
-      {
-        key: "stats.showWins.enabled",
-        type: "toggle",
-        text: ["OFF", "ON"],
-        description: "Show the total Wins.",
-      },
-      {
-        key: "stats.showWins.displayMode",
-        type: "cycle",
-        description: "Where to show Wins.",
-        values: [
-          { text: "Chat", value: "chat" },
-          { text: "Tab", value: "tab" },
-          { text: "Both", value: "both" },
-        ],
-      },
-      {
-        key: "stats.showWins.showPrefix",
-        type: "cycle",
-        description: "Show prefix in tab.",
-        values: [
-          { text: "Prefix ON", value: true },
-          { text: "Prefix OFF", value: false },
-        ],
-      },
-    ],
-  },
-  {
-    label: "Stats - Losses",
-    description: "Show the total Losses.",
-    defaults: {
-      stats: {
-        showLosses: { enabled: true, displayMode: "chat", showPrefix: true },
-      },
-    },
-    settings: [
-      {
-        key: "stats.showLosses.enabled",
-        type: "toggle",
-        text: ["OFF", "ON"],
-        description: "Show the total Losses.",
-      },
-      {
-        key: "stats.showLosses.displayMode",
-        type: "cycle",
-        description: "Where to show Losses.",
-        values: [
-          { text: "Chat", value: "chat" },
-          { text: "Tab", value: "tab" },
-          { text: "Both", value: "both" },
-        ],
-      },
-      {
-        key: "stats.showLosses.showPrefix",
-        type: "cycle",
-        description: "Show prefix in tab.",
-        values: [
-          { text: "Prefix ON", value: true },
-          { text: "Prefix OFF", value: false },
-        ],
-      },
-    ],
-  },
-  {
-    label: "Stats - WLR",
-    description: "Show the Win / Loss ratio.",
-    defaults: {
-      stats: {
-        showWlr: { enabled: true, displayMode: "chat", showPrefix: true },
-      },
-    },
-    settings: [
-      {
-        key: "stats.showWlr.enabled",
-        type: "toggle",
-        text: ["OFF", "ON"],
-        description: "Show the Win / Loss ratio.",
-      },
-      {
-        key: "stats.showWlr.displayMode",
-        type: "cycle",
-        description: "Where to show WLR.",
-        values: [
-          { text: "Chat", value: "chat" },
-          { text: "Tab", value: "tab" },
-          { text: "Both", value: "both" },
-        ],
-      },
-      {
-        key: "stats.showWlr.showPrefix",
         type: "cycle",
         description: "Show prefix in tab.",
         values: [
@@ -451,24 +320,24 @@ module.exports = [
     ],
   },
   {
-    label: "Stats - Beds Broken",
-    description: "Show the total Beds Broken.",
+    label: "Stats - WLR",
+    description: "Show the Win / Loss ratio.",
     defaults: {
       stats: {
-        showBeds: { enabled: true, displayMode: "both", showPrefix: true },
+        showWlr: { enabled: true, displayMode: "chat", showPrefix: true },
       },
     },
     settings: [
       {
-        key: "stats.showBeds.enabled",
+        key: "stats.showWlr.enabled",
         type: "toggle",
         text: ["OFF", "ON"],
-        description: "Show the total Beds Broken.",
+        description: "Show the Win / Loss ratio.",
       },
       {
-        key: "stats.showBeds.displayMode",
+        key: "stats.showWlr.displayMode",
         type: "cycle",
-        description: "Where to show Beds Broken.",
+        description: "Where to show WLR.",
         values: [
           { text: "Chat", value: "chat" },
           { text: "Tab", value: "tab" },
@@ -476,7 +345,79 @@ module.exports = [
         ],
       },
       {
-        key: "stats.showBeds.showPrefix",
+        key: "stats.showWlr.showPrefix",
+        type: "cycle",
+        description: "Show prefix in tab.",
+        values: [
+          { text: "Prefix ON", value: true },
+          { text: "Prefix OFF", value: false },
+        ],
+      },
+    ],
+  },
+  {
+    label: "Stats - Wins",
+    description: "Show the total Wins.",
+    defaults: {
+      stats: {
+        showWins: { enabled: true, displayMode: "chat", showPrefix: true },
+      },
+    },
+    settings: [
+      {
+        key: "stats.showWins.enabled",
+        type: "toggle",
+        text: ["OFF", "ON"],
+        description: "Show the total Wins.",
+      },
+      {
+        key: "stats.showWins.displayMode",
+        type: "cycle",
+        description: "Where to show Wins.",
+        values: [
+          { text: "Chat", value: "chat" },
+          { text: "Tab", value: "tab" },
+          { text: "Both", value: "both" },
+        ],
+      },
+      {
+        key: "stats.showWins.showPrefix",
+        type: "cycle",
+        description: "Show prefix in tab.",
+        values: [
+          { text: "Prefix ON", value: true },
+          { text: "Prefix OFF", value: false },
+        ],
+      },
+    ],
+  },
+  {
+    label: "Stats - Losses",
+    description: "Show the total Losses.",
+    defaults: {
+      stats: {
+        showLosses: { enabled: true, displayMode: "chat", showPrefix: true },
+      },
+    },
+    settings: [
+      {
+        key: "stats.showLosses.enabled",
+        type: "toggle",
+        text: ["OFF", "ON"],
+        description: "Show the total Losses.",
+      },
+      {
+        key: "stats.showLosses.displayMode",
+        type: "cycle",
+        description: "Where to show Losses.",
+        values: [
+          { text: "Chat", value: "chat" },
+          { text: "Tab", value: "tab" },
+          { text: "Both", value: "both" },
+        ],
+      },
+      {
+        key: "stats.showLosses.showPrefix",
         type: "cycle",
         description: "Show prefix in tab.",
         values: [
@@ -513,6 +454,42 @@ module.exports = [
       },
       {
         key: "stats.showWinstreak.showPrefix",
+        type: "cycle",
+        description: "Show prefix in tab.",
+        values: [
+          { text: "Prefix ON", value: true },
+          { text: "Prefix OFF", value: false },
+        ],
+      },
+    ],
+  },
+  {
+    label: "Stats - Beds Broken",
+    description: "Show the total Beds Broken.",
+    defaults: {
+      stats: {
+        showBeds: { enabled: true, displayMode: "both", showPrefix: true },
+      },
+    },
+    settings: [
+      {
+        key: "stats.showBeds.enabled",
+        type: "toggle",
+        text: ["OFF", "ON"],
+        description: "Show the total Beds Broken.",
+      },
+      {
+        key: "stats.showBeds.displayMode",
+        type: "cycle",
+        description: "Where to show Beds Broken.",
+        values: [
+          { text: "Chat", value: "chat" },
+          { text: "Tab", value: "tab" },
+          { text: "Both", value: "both" },
+        ],
+      },
+      {
+        key: "stats.showBeds.showPrefix",
         type: "cycle",
         description: "Show prefix in tab.",
         values: [
