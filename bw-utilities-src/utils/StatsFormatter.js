@@ -1,66 +1,69 @@
 const STAT_DEFINITIONS = [
-  { configKey: "showStars", formatter: "_formatStars" },
+  {
+    configKey: "showStars",
+    formatter: "_formatStars",
+  },
   {
     configKey: "showFkdr",
     dataKey: "fkdr",
     formatter: "_formatStat",
-    chatPrefix: "§9FKDR: ",
-    tabPrefix: "§9FKDR ",
+    chatPrefix: "FKDR: ",
+    tabPrefix: "FKDR ",
   },
   {
     configKey: "showFK",
     dataKey: "final_kills",
     formatter: "_formatStat",
-    chatPrefix: "§6FK: ",
-    tabPrefix: "§6FK ",
+    chatPrefix: "FK: ",
+    tabPrefix: "FK ",
   },
   {
     configKey: "showFD",
     dataKey: "final_deaths",
     formatter: "_formatStat",
-    chatPrefix: "§cFD: ",
-    tabPrefix: "§cFD ",
+    chatPrefix: "FD: ",
+    tabPrefix: "FD ",
   },
   {
     configKey: "showWlr",
     dataKey: "wlr",
     formatter: "_formatStat",
-    chatPrefix: "§bWLR: ",
-    tabPrefix: "§bWLR ",
+    chatPrefix: "WLR: ",
+    tabPrefix: "WLR ",
   },
   {
     configKey: "showWins",
     dataKey: "wins",
     formatter: "_formatStat",
-    chatPrefix: "§aWins: ",
-    tabPrefix: "§aW ",
+    chatPrefix: "Wins: ",
+    tabPrefix: "W ",
   },
   {
     configKey: "showLosses",
     dataKey: "losses",
     formatter: "_formatStat",
-    chatPrefix: "§cLosses: ",
-    tabPrefix: "§cL ",
+    chatPrefix: "Losses: ",
+    tabPrefix: "L ",
   },
   {
     configKey: "showBeds",
     dataKey: "beds_broken",
     formatter: "_formatStat",
-    chatPrefix: "§eBeds: ",
-    tabPrefix: "§eBB ",
+    chatPrefix: "Beds: ",
+    tabPrefix: "BB ",
   },
   {
     configKey: "showWinstreak",
     dataKey: "winstreak",
     formatter: "_formatStat",
-    chatPrefix: "§dWS: ",
-    tabPrefix: "§dWS ",
+    chatPrefix: "WS: ",
+    tabPrefix: "WS ",
   },
   {
     configKey: "showPing",
     dataKey: "ping",
     formatter: "_formatStat",
-    chatPrefix: "§aPing: ",
+    chatPrefix: "Ping: ",
   },
 ];
 
@@ -198,11 +201,13 @@ class StatsFormatter {
   }
 
   _getPrefix(mode, definition, statConfig) {
+    const prefixColor = statConfig.prefixColor || "§8";
+
     if (mode === "chat" || statConfig.showPrefix) {
       if (mode === "chat") {
-        return definition.chatPrefix ? definition.chatPrefix : "";
+        return definition.chatPrefix ? prefixColor + definition.chatPrefix : "";
       } else {
-        return definition.tabPrefix ? definition.tabPrefix : "";
+        return definition.tabPrefix ? prefixColor + definition.tabPrefix : "";
       }
     }
     return "";
