@@ -10,9 +10,10 @@ const TEAM_MAP = {
 };
 
 class TeamRanking {
-  constructor(api, apiService) {
+  constructor(api, apiService, bwuInstance) {
     this.api = api;
     this.apiService = apiService;
+    this.bwu = bwuInstance;
   }
 
   _sendMessage(message, isPrivate) {
@@ -32,18 +33,11 @@ class TeamRanking {
 
   getMyTeamLetter() {
     const me = this.api.getCurrentPlayer();
-    if (!me?.uuid) {
-      return null;
-    }
-
+    if (!me?.uuid) return null;
     const myServerInfo = this.api.getPlayerInfo(me.uuid);
-    if (!myServerInfo?.name) {
-      return null;
-    }
-
+    if (!myServerInfo?.name) return null;
     const nameAsSeenByServer = myServerInfo.name;
     const myTeam = this.api.getPlayerTeam(nameAsSeenByServer);
-
     return this.getTeamLetter(myTeam?.prefix);
   }
 
@@ -79,9 +73,6 @@ class TeamRanking {
 
     await Promise.all(
       playerNames.map(async (playerName) => {
-        const player = this.api.getPlayerByName(playerName);
-        if (!player) return;
-
         const team = this.api.getPlayerTeam(playerName);
         const teamLetter = this.getTeamLetter(team?.prefix);
 
@@ -92,7 +83,10 @@ class TeamRanking {
 
         if (!teamLetter || teamLetter === myTeamLetter) return;
 
-        const stats = await this.apiService.getPlayerStats(playerName);
+        const realName =
+          this.bwu.resolvedNicks.get(playerName.toLowerCase()) || playerName;
+
+        const stats = await this.apiService.getPlayerStats(realName);
         const fkdr =
           stats && !stats.isNicked && stats.fkdr !== undefined ? stats.fkdr : 5;
         const stars =
@@ -120,9 +114,7 @@ class TeamRanking {
   }
 
   async displayRanking(teamsData, isSolosMode, rankingSent) {
-    if (rankingSent) {
-      return;
-    }
+    if (rankingSent) return;
 
     const alwaysPrivate = this.api.config.get("privateRanking.alwaysPrivate");
     const useSeparateMessages = this.api.config.get(
