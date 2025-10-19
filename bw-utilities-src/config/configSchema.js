@@ -210,7 +210,11 @@ module.exports = [
   {
     label: "Stats - Level (Stars)",
     description: "Show the level (stars).",
-    defaults: { stats: { showStars: { enabled: true, displayMode: "both" } } },
+    defaults: {
+      stats: {
+        showStars: { enabled: true, displayMode: "both", showPrefix: true },
+      },
+    },
     settings: [
       {
         key: "stats.showStars.enabled",
@@ -233,7 +237,11 @@ module.exports = [
   {
     label: "Stats - FKDR",
     description: "Show the Final Kills / Deaths ratio.",
-    defaults: { stats: { showFkdr: { enabled: true, displayMode: "both" } } },
+    defaults: {
+      stats: {
+        showFkdr: { enabled: true, displayMode: "both", showPrefix: true },
+      },
+    },
     settings: [
       {
         key: "stats.showFkdr.enabled",
@@ -251,73 +259,13 @@ module.exports = [
           { text: "Both", value: "both" },
         ],
       },
-    ],
-  },
-  {
-    label: "Stats - Final Kills",
-    description: "Show the total Final Kills.",
-    defaults: { stats: { showFK: { enabled: true, displayMode: "both" } } },
-    settings: [
       {
-        key: "stats.showFK.enabled",
-        type: "toggle",
-        text: ["OFF", "ON"],
-        description: "Show the total Final Kills.",
-      },
-      {
-        key: "stats.showFK.displayMode",
+        key: "stats.showFkdr.showPrefix",
         type: "cycle",
-        description: "Where to show Final Kills.",
+        description: "Show prefix in tab.",
         values: [
-          { text: "Chat", value: "chat" },
-          { text: "Tab", value: "tab" },
-          { text: "Both", value: "both" },
-        ],
-      },
-    ],
-  },
-  {
-    label: "Stats - Final Deaths",
-    description: "Show the total Final Deaths.",
-    defaults: { stats: { showFD: { enabled: true, displayMode: "both" } } },
-    settings: [
-      {
-        key: "stats.showFD.enabled",
-        type: "toggle",
-        text: ["OFF", "ON"],
-        description: "Show the total Final Deaths.",
-      },
-      {
-        key: "stats.showFD.displayMode",
-        type: "cycle",
-        description: "Where to show Final Deaths.",
-        values: [
-          { text: "Chat", value: "chat" },
-          { text: "Tab", value: "tab" },
-          { text: "Both", value: "both" },
-        ],
-      },
-    ],
-  },
-  {
-    label: "Stats - Beds Broken",
-    description: "Show the total Beds Broken.",
-    defaults: { stats: { showBeds: { enabled: true, displayMode: "both" } } },
-    settings: [
-      {
-        key: "stats.showBeds.enabled",
-        type: "toggle",
-        text: ["OFF", "ON"],
-        description: "Show the total Beds Broken.",
-      },
-      {
-        key: "stats.showBeds.displayMode",
-        type: "cycle",
-        description: "Where to show Beds Broken.",
-        values: [
-          { text: "Chat", value: "chat" },
-          { text: "Tab", value: "tab" },
-          { text: "Both", value: "both" },
+          { text: "Prefix ON", value: true },
+          { text: "Prefix OFF", value: false },
         ],
       },
     ],
@@ -325,7 +273,11 @@ module.exports = [
   {
     label: "Stats - Wins",
     description: "Show the total Wins.",
-    defaults: { stats: { showWins: { enabled: true, displayMode: "chat" } } },
+    defaults: {
+      stats: {
+        showWins: { enabled: true, displayMode: "chat", showPrefix: true },
+      },
+    },
     settings: [
       {
         key: "stats.showWins.enabled",
@@ -343,12 +295,25 @@ module.exports = [
           { text: "Both", value: "both" },
         ],
       },
+      {
+        key: "stats.showWins.showPrefix",
+        type: "cycle",
+        description: "Show prefix in tab.",
+        values: [
+          { text: "Prefix ON", value: true },
+          { text: "Prefix OFF", value: false },
+        ],
+      },
     ],
   },
   {
     label: "Stats - Losses",
     description: "Show the total Losses.",
-    defaults: { stats: { showLosses: { enabled: true, displayMode: "chat" } } },
+    defaults: {
+      stats: {
+        showLosses: { enabled: true, displayMode: "chat", showPrefix: true },
+      },
+    },
     settings: [
       {
         key: "stats.showLosses.enabled",
@@ -366,12 +331,25 @@ module.exports = [
           { text: "Both", value: "both" },
         ],
       },
+      {
+        key: "stats.showLosses.showPrefix",
+        type: "cycle",
+        description: "Show prefix in tab.",
+        values: [
+          { text: "Prefix ON", value: true },
+          { text: "Prefix OFF", value: false },
+        ],
+      },
     ],
   },
   {
     label: "Stats - WLR",
     description: "Show the Win / Loss ratio.",
-    defaults: { stats: { showWlr: { enabled: true, displayMode: "chat" } } },
+    defaults: {
+      stats: {
+        showWlr: { enabled: true, displayMode: "chat", showPrefix: true },
+      },
+    },
     settings: [
       {
         key: "stats.showWlr.enabled",
@@ -389,13 +367,132 @@ module.exports = [
           { text: "Both", value: "both" },
         ],
       },
+      {
+        key: "stats.showWlr.showPrefix",
+        type: "cycle",
+        description: "Show prefix in tab.",
+        values: [
+          { text: "Prefix ON", value: true },
+          { text: "Prefix OFF", value: false },
+        ],
+      },
+    ],
+  },
+  {
+    label: "Stats - Final Kills",
+    description: "Show the total Final Kills.",
+    defaults: {
+      stats: {
+        showFK: { enabled: true, displayMode: "both", showPrefix: true },
+      },
+    },
+    settings: [
+      {
+        key: "stats.showFK.enabled",
+        type: "toggle",
+        text: ["OFF", "ON"],
+        description: "Show the total Final Kills.",
+      },
+      {
+        key: "stats.showFK.displayMode",
+        type: "cycle",
+        description: "Where to show Final Kills.",
+        values: [
+          { text: "Chat", value: "chat" },
+          { text: "Tab", value: "tab" },
+          { text: "Both", value: "both" },
+        ],
+      },
+      {
+        key: "stats.showFK.showPrefix",
+        type: "cycle",
+        description: "Show prefix in tab.",
+        values: [
+          { text: "Prefix ON", value: true },
+          { text: "Prefix OFF", value: false },
+        ],
+      },
+    ],
+  },
+  {
+    label: "Stats - Final Deaths",
+    description: "Show the total Final Deaths.",
+    defaults: {
+      stats: {
+        showFD: { enabled: true, displayMode: "both", showPrefix: true },
+      },
+    },
+    settings: [
+      {
+        key: "stats.showFD.enabled",
+        type: "toggle",
+        text: ["OFF", "ON"],
+        description: "Show the total Final Deaths.",
+      },
+      {
+        key: "stats.showFD.displayMode",
+        type: "cycle",
+        description: "Where to show Final Deaths.",
+        values: [
+          { text: "Chat", value: "chat" },
+          { text: "Tab", value: "tab" },
+          { text: "Both", value: "both" },
+        ],
+      },
+      {
+        key: "stats.showFD.showPrefix",
+        type: "cycle",
+        description: "Show prefix in tab.",
+        values: [
+          { text: "Prefix ON", value: true },
+          { text: "Prefix OFF", value: false },
+        ],
+      },
+    ],
+  },
+  {
+    label: "Stats - Beds Broken",
+    description: "Show the total Beds Broken.",
+    defaults: {
+      stats: {
+        showBeds: { enabled: true, displayMode: "both", showPrefix: true },
+      },
+    },
+    settings: [
+      {
+        key: "stats.showBeds.enabled",
+        type: "toggle",
+        text: ["OFF", "ON"],
+        description: "Show the total Beds Broken.",
+      },
+      {
+        key: "stats.showBeds.displayMode",
+        type: "cycle",
+        description: "Where to show Beds Broken.",
+        values: [
+          { text: "Chat", value: "chat" },
+          { text: "Tab", value: "tab" },
+          { text: "Both", value: "both" },
+        ],
+      },
+      {
+        key: "stats.showBeds.showPrefix",
+        type: "cycle",
+        description: "Show prefix in tab.",
+        values: [
+          { text: "Prefix ON", value: true },
+          { text: "Prefix OFF", value: false },
+        ],
+      },
     ],
   },
   {
     label: "Stats - Winstreak",
     description: "Show the current Winstreak",
     defaults: {
-      stats: { showWinstreak: { enabled: true, displayMode: "both" } },
+      stats: {
+        showWinstreak: { enabled: true, displayMode: "both", showPrefix: true },
+      },
     },
     settings: [
       {
@@ -414,12 +511,25 @@ module.exports = [
           { text: "Both", value: "both" },
         ],
       },
+      {
+        key: "stats.showWinstreak.showPrefix",
+        type: "cycle",
+        description: "Show prefix in tab.",
+        values: [
+          { text: "Prefix ON", value: true },
+          { text: "Prefix OFF", value: false },
+        ],
+      },
     ],
   },
   {
     label: "Stats - Ping",
     description: "Show the player's ping (requires Polsu API).",
-    defaults: { stats: { showPing: { enabled: true, displayMode: "both" } } },
+    defaults: {
+      stats: {
+        showPing: { enabled: true, displayMode: "both", showPrefix: true },
+      },
+    },
     settings: [
       {
         key: "stats.showPing.enabled",
@@ -435,6 +545,15 @@ module.exports = [
           { text: "Chat", value: "chat" },
           { text: "Tab", value: "tab" },
           { text: "Both", value: "both" },
+        ],
+      },
+      {
+        key: "stats.showPing.showPrefix",
+        type: "cycle",
+        description: "Show prefix in tab.",
+        values: [
+          { text: "Prefix ON", value: true },
+          { text: "Prefix OFF", value: false },
         ],
       },
     ],
