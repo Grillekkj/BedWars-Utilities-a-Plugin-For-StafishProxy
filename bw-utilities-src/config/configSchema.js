@@ -323,6 +323,75 @@ module.exports = [
     ],
   },
   {
+    label: "Stats - Wins",
+    description: "Show the total Wins.",
+    defaults: { stats: { showWins: { enabled: true, displayMode: "chat" } } },
+    settings: [
+      {
+        key: "stats.showWins.enabled",
+        type: "toggle",
+        text: ["OFF", "ON"],
+        description: "Show the total Wins.",
+      },
+      {
+        key: "stats.showWins.displayMode",
+        type: "cycle",
+        description: "Where to show Wins.",
+        values: [
+          { text: "Chat", value: "chat" },
+          { text: "Tab", value: "tab" },
+          { text: "Both", value: "both" },
+        ],
+      },
+    ],
+  },
+  {
+    label: "Stats - Losses",
+    description: "Show the total Losses.",
+    defaults: { stats: { showLosses: { enabled: true, displayMode: "chat" } } },
+    settings: [
+      {
+        key: "stats.showLosses.enabled",
+        type: "toggle",
+        text: ["OFF", "ON"],
+        description: "Show the total Losses.",
+      },
+      {
+        key: "stats.showLosses.displayMode",
+        type: "cycle",
+        description: "Where to show Losses.",
+        values: [
+          { text: "Chat", value: "chat" },
+          { text: "Tab", value: "tab" },
+          { text: "Both", value: "both" },
+        ],
+      },
+    ],
+  },
+  {
+    label: "Stats - WLR",
+    description: "Show the Win / Loss ratio.",
+    defaults: { stats: { showWlr: { enabled: true, displayMode: "chat" } } },
+    settings: [
+      {
+        key: "stats.showWlr.enabled",
+        type: "toggle",
+        text: ["OFF", "ON"],
+        description: "Show the Win / Loss ratio.",
+      },
+      {
+        key: "stats.showWlr.displayMode",
+        type: "cycle",
+        description: "Where to show WLR.",
+        values: [
+          { text: "Chat", value: "chat" },
+          { text: "Tab", value: "tab" },
+          { text: "Both", value: "both" },
+        ],
+      },
+    ],
+  },
+  {
     label: "Stats - Winstreak",
     description: "Show the current Winstreak",
     defaults: {
