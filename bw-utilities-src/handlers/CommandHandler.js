@@ -40,9 +40,9 @@ class CommandHandler {
   handleSetThresholdCommand(ctx) {
     const threshold = ctx.args.threshold;
 
-    const numericThreshold = parseFloat(threshold);
+    const numericThreshold = Number.parseFloat(threshold);
 
-    if (isNaN(numericThreshold) || numericThreshold < 0) {
+    if (Number.isNaN(numericThreshold) || numericThreshold < 0) {
       this.api.chat(
         `${this.api.getPrefix()} §cError: Please provide a valid number for the threshold (e.g., 10.0).`
       );
