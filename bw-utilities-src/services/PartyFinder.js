@@ -28,7 +28,7 @@ class PartyFinder {
       Number.isNaN(Number.parseFloat(fkdrThreshold))
     ) {
       this.api.chat(
-        `${this.api.getPrefix()} §cInvalid arguments. Usage: /bwu find (mode) <2|3|4> (people) <1|2|3> <fkdr> <role1> <role3>...`
+        `${this.api.getPrefix()} §cInvalid arguments. Usage: /bwu find (mode) <2|3|4> (people) <1|2|3> <fkdr> <role1> <role2>...`
       );
       return;
     }
