@@ -178,6 +178,29 @@ class BedWarsUtilities {
           .map((p) => p.trim())
           .filter(Boolean);
 
+        const me = this.api.getCurrentPlayer();
+
+        if (me?.uuid) {
+          const myInfoFromServer = this.api.getPlayerInfo(me.uuid);
+          const myNickName = myInfoFromServer ? myInfoFromServer.name : null;
+          const myRealName = me.name;
+
+          if (
+            myNickName &&
+            myRealName &&
+            myNickName.toLowerCase() !== myRealName.toLowerCase()
+          ) {
+            const isMyNickInWhoList = originalPlayerNames.some(
+              (name) => name.toLowerCase() === myNickName.toLowerCase()
+            );
+
+            if (isMyNickInWhoList) {
+              this.resolvedNicks.set(myNickName.toLowerCase(), myRealName);
+              this.realNameToNickMap.set(myRealName.toLowerCase(), myNickName);
+            }
+          }
+        }
+
         const denicker = this._getDenickerInstance();
 
         const resolvedPlayerNames = originalPlayerNames.map((nickName) => {
