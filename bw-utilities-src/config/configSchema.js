@@ -547,15 +547,6 @@ module.exports = [
           { text: "Both", value: "both" },
         ],
       },
-      {
-        key: "stats.showPing.showPrefix",
-        type: "cycle",
-        description: "Show prefix in tab.",
-        values: [
-          { text: "Prefix ON", value: true },
-          { text: "Prefix OFF", value: false },
-        ],
-      },
     ],
   },
 ];
