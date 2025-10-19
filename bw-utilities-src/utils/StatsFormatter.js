@@ -7,6 +7,26 @@ const STAT_DEFINITIONS = [
     tabPrefix: "§9FKDR ",
   },
   {
+    configKey: "showWlr",
+    formatter: "_formatWlr",
+    chatPrefix: "§bWLR: ",
+    tabPrefix: "§bWLR ",
+  },
+  {
+    configKey: "showWins",
+    dataKey: "wins",
+    formatter: "_formatSimpleStat",
+    chatPrefix: "§aWins: ",
+    tabPrefix: "§aW ",
+  },
+  {
+    configKey: "showLosses",
+    dataKey: "losses",
+    formatter: "_formatSimpleStat",
+    chatPrefix: "§cLosses: ",
+    tabPrefix: "§cL ",
+  },
+  {
     configKey: "showFK",
     dataKey: "final_kills",
     formatter: "_formatSimpleStat",
@@ -46,7 +66,7 @@ class StatsFormatter {
     const starStr = stars.toString();
     const firstDigit = starStr.charAt(0);
     const middleDigits = starStr.substring(1, starStr.length - 1);
-    const lastDigit = starStr.charAt(starStr.length - 1);
+    const lastDigit = starStr.at(-1);
 
     return `${colorPattern[0]}${firstDigit}${colorPattern[1]}${middleDigits}${colorPattern[2]}${lastDigit}`;
   }
@@ -213,45 +233,112 @@ class StatsFormatter {
     return `§f`;
   }
 
+  _applyWlrColor(value) {
+    if (value === undefined || value === null) return "§c";
+    const rules = [
+      { max: 0.49, color: "§7" },
+      { max: 0.99, color: "§f" },
+      { max: 1.99, color: "§a" },
+      { max: 3.99, color: "§e" },
+      { max: 5.99, color: "§6" },
+      { max: 9.99, color: "§d" },
+      { min: 10, color: "§5" },
+    ];
+
+    for (const rule of rules) {
+      if (
+        (rule.min === undefined || value >= rule.min) &&
+        (rule.max === undefined || value <= rule.max)
+      ) {
+        return rule.color;
+      }
+    }
+    return `§f`;
+  }
+
+  _getPrefix(mode, definition, statConfig) {
+    if (mode === "chat" || statConfig.showPrefix) {
+      return (
+        (mode === "chat" ? definition.chatPrefix : definition.tabPrefix) ?? ""
+      );
+    }
+    return "";
+  }
+
   _formatStars({ stats }) {
     return this._getPrestigeTag(stats.stars);
   }
 
-  _formatFkdr({ stats, mode, definition }) {
+  _formatFkdr({ stats, mode, definition, statConfig }) {
     const fkdrColor = this._applyFkdrColor(stats.fkdr);
     const fkdrValue =
       stats.fkdr !== undefined && stats.fkdr !== null
         ? stats.fkdr.toFixed(2)
         : "§c?";
-    const prefix =
-      (mode === "chat" ? definition.chatPrefix : definition.tabPrefix) ?? "";
+    const prefix = this._getPrefix(mode, definition, statConfig);
     return `${prefix}${fkdrColor}${fkdrValue}`;
   }
 
-  _formatSimpleStat({ stats, mode, definition }) {
-    const value = stats[definition.dataKey];
-    const prefix =
-      (mode === "chat" ? definition.chatPrefix : definition.tabPrefix) ?? "";
-    return `${prefix}${value !== undefined && value !== null ? value : "§c?"}`;
+  _formatWlr({ stats, mode, definition, statConfig }) {
+    const wlrColor = this._applyWlrColor(stats.wlr);
+    const wlrValue =
+      stats.wlr !== undefined && stats.wlr !== null
+        ? stats.wlr.toFixed(2)
+        : "§c?";
+    const prefix = this._getPrefix(mode, definition, statConfig);
+    return `${prefix}${wlrColor}${wlrValue}`;
   }
 
-  _formatPing({ ping, mode, definition }) {
-    const prefix =
-      (mode === "chat" ? definition.chatPrefix : definition.tabPrefix) ?? "";
+  _formatSimpleStat({ stats, mode, definition, statConfig }) {
+    const value = stats[definition.dataKey];
+    const prefix = this._getPrefix(mode, definition, statConfig);
+    const valueStr = value !== undefined && value !== null ? value : "§c?";
+
+    const prefixColorMatch = (
+      definition.tabPrefix ||
+      definition.chatPrefix ||
+      "§f"
+    ).match(/§[0-9a-fk-or]/);
+    const color = prefixColorMatch ? prefixColorMatch[0] : "§f";
+
+    if (mode === "tab" && !statConfig.showPrefix) {
+      return `${color}${valueStr}`;
+    }
+
+    return `${prefix}${valueStr}`;
+  }
+
+  _formatPing({ ping, mode, definition, statConfig }) {
+    const prefix = this._getPrefix(mode, definition, statConfig);
     const value = typeof ping === "number" ? `§a${ping}ms` : "§c?";
     return `${prefix}${value}`;
   }
 
   _buildStatsParts(stats, ping, mode) {
     const config = this.api.config.get("stats");
+    const isTabMode = mode === "tab";
 
     return STAT_DEFINITIONS.reduce((parts, definition) => {
-      if (config[definition.configKey]) {
+      const statConfig = config[definition.configKey];
+
+      if (!statConfig?.enabled) {
+        return parts;
+      }
+
+      const displayMode = statConfig.displayMode;
+
+      const shouldShow =
+        displayMode === "both" ||
+        (displayMode === "chat" && !isTabMode) ||
+        (displayMode === "tab" && isTabMode);
+
+      if (shouldShow) {
         const part = this[definition.formatter]({
           stats,
           ping,
           mode,
           definition,
+          statConfig,
         });
         parts.push(part);
       }
@@ -293,4 +380,3 @@ class StatsFormatter {
 }
 
 module.exports = StatsFormatter;
-

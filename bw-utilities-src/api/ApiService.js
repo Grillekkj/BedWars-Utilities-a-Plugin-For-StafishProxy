@@ -4,6 +4,30 @@ class ApiService {
     this.cache = cacheManager;
   }
 
+  async testHypixelApiKey() {
+    try {
+      const apiKey = this.api.config.get("main.hypixelApiKey");
+      if (!apiKey || apiKey === "YOUR_HYPIXEL_API_KEY_HERE") {
+        return { isValid: false, reason: "API key not set." };
+      }
+
+      const response = await fetch(`https://api.hypixel.net/v2/counts`, {
+        headers: { "API-Key": apiKey },
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        return { isValid: true };
+      } else {
+        return { isValid: false, reason: data.cause || "Invalid API key." };
+      }
+    } catch (error) {
+      console.error(`[BWU HYPIXEL API] API key test failed: ${error.message}`);
+      return { isValid: false, reason: "Failed to connect to Hypixel API." };
+    }
+  }
+
   async getUuid(playerName) {
     // try to get uuid from starfish first
     const playerFromProxy = this.api.getPlayerByName(playerName);
@@ -57,6 +81,8 @@ class ApiService {
       const stats = data.player.stats?.Bedwars || {};
       const finalKills = stats.final_kills_bedwars || 0;
       const finalDeaths = stats.final_deaths_bedwars || 0;
+      const wins = stats.wins_bedwars || 0;
+      const losses = stats.losses_bedwars || 0;
 
       const relevantStats = {
         isNicked: false,
@@ -66,6 +92,9 @@ class ApiService {
         final_deaths: finalDeaths,
         beds_broken: stats.beds_broken_bedwars || 0,
         winstreak: stats.winstreak || 0,
+        wins: wins,
+        losses: losses,
+        wlr: wins / Math.max(1, losses),
       };
 
       this.cache.setPlayerStats(playerName, relevantStats);

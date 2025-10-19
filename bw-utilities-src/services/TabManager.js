@@ -1,8 +1,9 @@
 class TabManager {
-  constructor(api, apiService, statsFormatter) {
+  constructor(api, apiService, statsFormatter, bwuInstance) {
     this.api = api;
     this.apiService = apiService;
     this.statsFormatter = statsFormatter;
+    this.bwu = bwuInstance;
     this.managedPlayers = new Map();
   }
 
@@ -17,41 +18,67 @@ class TabManager {
     }
   }
 
-  async addPlayerStatsToTab(playerName) {
+  async addPlayerStatsToTab(originalPlayerName, resolvedPlayerName) {
     try {
-      const player = this.api.getPlayerByName(playerName);
-      if (!player?.uuid) return;
-      if (this.managedPlayers.has(playerName)) return;
+      let player = null;
+      const me = this.api.getCurrentPlayer();
+      const myRealName = me ? me.name : null;
 
-      const promises = [this.apiService.getPlayerStats(playerName)];
+      if (
+        myRealName &&
+        resolvedPlayerName.toLowerCase() === myRealName.toLowerCase()
+      ) {
+        player = me;
+        const playerByNick = this.api.getPlayerByName(originalPlayerName);
+        if (playerByNick) {
+          player.uuid = playerByNick.uuid;
+        }
+      } else {
+        player = this.api.getPlayerByName(originalPlayerName);
+      }
 
-      if (this.api.config.get("stats.showPing") && player.uuid) {
-        promises.push(this.apiService.getPlayerPing(player.uuid));
+      if (!player?.uuid) {
+        return;
+      }
+      if (this.managedPlayers.has(originalPlayerName)) return;
+
+      const finalNameForStats = resolvedPlayerName || originalPlayerName;
+
+      const promises = [this.apiService.getPlayerStats(finalNameForStats)];
+
+      if (this.api.config.get("stats.showPing")) {
+        const pingPromise = (async () => {
+          const realUuid = await this.apiService.getUuid(finalNameForStats);
+          if (realUuid) {
+            return this.apiService.getPlayerPing(realUuid);
+          }
+          return null;
+        })();
+        promises.push(pingPromise);
       } else {
         promises.push(Promise.resolve(null));
       }
 
       const [stats, ping] = await Promise.all(promises);
-      //suffix
+
       const statsSuffix = this.statsFormatter.formatStats(
         "tab",
-        null,
+        finalNameForStats,
         stats,
         ping
       );
 
       this.api.setDisplayNameSuffix(player.uuid, statsSuffix);
-      this.managedPlayers.set(playerName, {
+      this.managedPlayers.set(originalPlayerName, {
         type: "auto-stats",
         uuid: player.uuid,
       });
     } catch (error) {
       console.error(
-        `[BWU] Failed to add stats to tab for ${playerName}: ${error.stack}`
+        `[BWU] Failed to add stats to tab for ${originalPlayerName}: ${error.stack}`
       );
     }
   }
 }
 
 module.exports = TabManager;
-

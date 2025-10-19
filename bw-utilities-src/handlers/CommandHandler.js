@@ -1,8 +1,25 @@
 class CommandHandler {
-  constructor(api, tabManager, chatHandler) {
+  constructor(api, tabManager, chatHandler, partyFinder) {
     this.api = api;
     this.tabManager = tabManager;
     this.chatHandler = chatHandler;
+    this.partyFinder = partyFinder;
+  }
+
+  handleFindCommand(ctx) {
+    if (ctx.args.mode && ctx.args.mode.toLowerCase() === "stop") {
+      this.partyFinder.stop();
+      return;
+    }
+
+    const mode = ctx.args.mode;
+    const playersToFind = ctx.args.playersToFind;
+    const fkdrThreshold = ctx.args.fkdrThreshold;
+    const positions = ctx.args.positions || [];
+
+    const args = [mode, playersToFind, fkdrThreshold, ...positions];
+
+    this.partyFinder.start(args);
   }
 
   async handleStatsCommand(ctx) {
@@ -23,9 +40,9 @@ class CommandHandler {
   handleSetThresholdCommand(ctx) {
     const threshold = ctx.args.threshold;
 
-    const numericThreshold = parseFloat(threshold);
+    const numericThreshold = Number.parseFloat(threshold);
 
-    if (isNaN(numericThreshold) || numericThreshold < 0) {
+    if (Number.isNaN(numericThreshold) || numericThreshold < 0) {
       this.api.chat(
         `${this.api.getPrefix()} §cError: Please provide a valid number for the threshold (e.g., 10.0).`
       );
@@ -94,4 +111,3 @@ class CommandHandler {
 }
 
 module.exports = CommandHandler;
-

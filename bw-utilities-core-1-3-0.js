@@ -1,8 +1,8 @@
 const BedWarsUtilities = require("./bw-utilities-src/BedWarsUtilities");
 const configSchema = require("./bw-utilities-src/config/configSchema");
 
-module.exports = (api) => {
-  process.on("uncaughtException", (err, origin) => {
+module.exports = function BedWarsUtilitiesPlugin(api) {
+  process.on("uncaughtException", (err, _origin) => {
     console.error(`[BWU FATAL] UNHANDLED ERROR: ${err.stack}`);
   });
 
@@ -10,10 +10,12 @@ module.exports = (api) => {
     name: "bwu",
     displayName: "BedWars Utilities",
     prefix: "§6BWU",
-    version: "1.2.1",
+    version: "1.3.0",
     author: "Grille (silly_brazil)",
     description:
       "A versatile Bedwars plugin offering a variety of useful features to enhance gameplay.",
+    dependencies: [{ name: "denicker", minVersion: "1.1.0" }],
+    optionalDependencies: [{ name: "numdenicker", minVersion: "1.0.3" }],
   });
 
   const bwu = new BedWarsUtilities(api);
@@ -24,4 +26,3 @@ module.exports = (api) => {
   bwu.registerHandlers();
   return bwu;
 };
-

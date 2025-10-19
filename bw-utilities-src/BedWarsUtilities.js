@@ -6,6 +6,7 @@ const CommandHandler = require("./handlers/CommandHandler");
 const GameHandler = require("./handlers/GameHandler");
 const TeamRanking = require("./services/TeamRanking");
 const TabManager = require("./services/TabManager");
+const PartyFinder = require("./services/PartyFinder");
 
 class BedWarsUtilities {
   constructor(api) {
@@ -13,8 +14,15 @@ class BedWarsUtilities {
     this.cacheManager = new CacheManager(api);
     this.apiService = new ApiService(api, this.cacheManager);
     this.statsFormatter = new StatsFormatter(api);
-    this.teamRanking = new TeamRanking(api, this.apiService);
-    this.tabManager = new TabManager(api, this.apiService, this.statsFormatter);
+    this.teamRanking = new TeamRanking(api, this.apiService, this);
+    this.partyFinder = new PartyFinder(api, this.apiService);
+    this.tabManager = new TabManager(
+      api,
+      this.apiService,
+      this.statsFormatter,
+      this
+    );
+
     this.chatHandler = new ChatHandler(
       api,
       this.apiService,
@@ -25,7 +33,8 @@ class BedWarsUtilities {
     this.commandHandler = new CommandHandler(
       api,
       this.tabManager,
-      this.chatHandler
+      this.chatHandler,
+      this.partyFinder
     );
     this.gameHandler = new GameHandler(api, this.chatHandler, this.tabManager);
     this.autoStatsMode = false;
@@ -33,13 +42,47 @@ class BedWarsUtilities {
     this.lastCleanMessage = null;
     this.requeueTriggered = false;
     this.rankingSentThisMatch = false;
+    this.resolvedNicks = new Map();
+    this.realNameToNickMap = new Map();
+  }
+
+  _getDenickerInstance() {
+    try {
+      return this.api.getPluginInstance("denicker");
+    } catch (e) {
+      console.warn(`[BWU] Failed to get denicker instance: ${e?.stack ?? e}`);
+      return null;
+    }
   }
 
   registerHandlers() {
+    this.api.on("player_join", () => this._initialApiKeyCheck());
     this.api.on("chat", (event) => this.onChat(event));
     this.api.on("respawn", () => this.onWorldChange());
+    this.api.on("denicker:nick_resolved", (data) => this.onNickResolved(data));
 
     this.api.commands((registry) => {
+      registry
+        .command("find")
+        .description("Finds players for your party based on criteria.")
+        .argument("<mode>", { description: "Mode (2, 3, 4) or 'stop'" })
+        .argument("[playersToFind]", {
+          description: "Number of players to find",
+          // Not rlly optional, just so ppl can /bwu find stop
+          optional: true,
+        })
+        .argument("[fkdrThreshold]", {
+          description: "Minimum FKDR required",
+          // Not rlly optional, just so ppl can /bwu find stop
+          optional: true,
+        })
+        .argument("positions", {
+          description: "Optional positions",
+          optional: true,
+          type: "greedy",
+        })
+        .handler((ctx) => this.commandHandler.handleFindCommand(ctx));
+
       registry
         .command("stats")
         .description("Shows the Bedwars statistics for a player.")
@@ -71,9 +114,47 @@ class BedWarsUtilities {
     });
   }
 
+  onNickResolved({ nickName, realName }) {
+    if (this.resolvedNicks.has(nickName.toLowerCase())) return;
+
+    this.resolvedNicks.set(nickName.toLowerCase(), realName);
+    this.realNameToNickMap.set(realName.toLowerCase(), nickName);
+
+    if (this.tabManager.managedPlayers.has(nickName)) {
+      this.tabManager.addPlayerStatsToTab(nickName, realName);
+    }
+  }
+
+  async _initialApiKeyCheck() {
+    setTimeout(async () => {
+      const result = await this.apiService.testHypixelApiKey();
+      if (result.isValid) {
+        this.api.sendTitle(
+          "§6BW Utilities",
+          "§aHypixel API key is functional!",
+          10, // Fade in (ticks)
+          40, // Stay (ticks)
+          10 // Fade out (ticks)
+        );
+      } else {
+        this.api.sendTitle(
+          "§6BW Utilities",
+          "§cHypixel API key is not functional! Please set a valid key",
+          10, // Fade in (ticks)
+          40, // Stay (ticks)
+          10 // Fade out (ticks)
+        );
+      }
+    }, 3000);
+  }
+
   async onChat(event) {
     try {
-      const cleanMessage = event.message.replace(/§[0-9a-fk-or]/g, "");
+      const cleanMessage = event.message.replaceAll(/§[0-9a-fk-or]/g, "");
+
+      if (this.partyFinder.isActive) {
+        this.partyFinder.handleChatMessage(cleanMessage);
+      }
 
       await this.gameHandler.handleGameStart(
         cleanMessage,
@@ -91,11 +172,54 @@ class BedWarsUtilities {
           );
         }
         this.tabManager.clearManagedPlayers("all");
-        const players = whoMatch[1]
+
+        const originalPlayerNames = whoMatch[1]
           .split(", ")
           .map((p) => p.trim())
           .filter(Boolean);
-        await this.processPlayerData(players);
+
+        const me = this.api.getCurrentPlayer();
+
+        if (me?.uuid) {
+          const myInfoFromServer = this.api.getPlayerInfo(me.uuid);
+          const myNickName = myInfoFromServer ? myInfoFromServer.name : null;
+          const myRealName = me.name;
+
+          if (
+            myNickName &&
+            myRealName &&
+            myNickName.toLowerCase() !== myRealName.toLowerCase()
+          ) {
+            const isMyNickInWhoList = originalPlayerNames.some(
+              (name) => name.toLowerCase() === myNickName.toLowerCase()
+            );
+
+            if (isMyNickInWhoList) {
+              this.resolvedNicks.set(myNickName.toLowerCase(), myRealName);
+              this.realNameToNickMap.set(myRealName.toLowerCase(), myNickName);
+            }
+          }
+        }
+
+        const denicker = this._getDenickerInstance();
+
+        const resolvedPlayerNames = originalPlayerNames.map((nickName) => {
+          let realName = this.resolvedNicks.get(nickName.toLowerCase());
+
+          if (!realName && denicker) {
+            realName = denicker.getRealName(nickName);
+          }
+
+          const finalName = realName || nickName;
+
+          if (nickName.toLowerCase() !== finalName.toLowerCase()) {
+            this.realNameToNickMap.set(finalName.toLowerCase(), nickName);
+          }
+
+          return finalName;
+        });
+
+        await this.processPlayerData(originalPlayerNames, resolvedPlayerNames);
         return;
       }
 
@@ -118,6 +242,8 @@ class BedWarsUtilities {
     this.lastCleanMessage = null;
     this.requeueTriggered = false;
     this.rankingSentThisMatch = false;
+    this.resolvedNicks.clear();
+    this.realNameToNickMap.clear();
 
     if (this.autoStatsMode) {
       this.autoStatsMode = false;
@@ -126,13 +252,15 @@ class BedWarsUtilities {
     }
   }
 
-  async processPlayerData(playerNames) {
-    playerNames.forEach((playerName) =>
-      this.tabManager.addPlayerStatsToTab(playerName)
-    );
+  async processPlayerData(originalPlayerNames, resolvedPlayerNames) {
+    for (let i = 0; i < originalPlayerNames.length; i++) {
+      const originalName = originalPlayerNames[i];
+      const resolvedName = resolvedPlayerNames[i];
+      this.tabManager.addPlayerStatsToTab(originalName, resolvedName);
+    }
 
     await this.teamRanking.processAndDisplayRanking(
-      playerNames,
+      originalPlayerNames,
       this.rankingSentThisMatch
     );
 
@@ -141,4 +269,3 @@ class BedWarsUtilities {
 }
 
 module.exports = BedWarsUtilities;
-

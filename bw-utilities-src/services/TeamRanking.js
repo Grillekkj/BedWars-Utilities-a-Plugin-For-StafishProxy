@@ -10,16 +10,17 @@ const TEAM_MAP = {
 };
 
 class TeamRanking {
-  constructor(api, apiService) {
+  constructor(api, apiService, bwuInstance) {
     this.api = api;
     this.apiService = apiService;
+    this.bwu = bwuInstance;
   }
 
   _sendMessage(message, isPrivate) {
     if (isPrivate) {
       this.api.chat(message);
     } else {
-      const cleanMessage = message.replace(/§[0-9a-fk-or]/g, "");
+      const cleanMessage = message.replaceAll(/§[0-9a-fk-or]/g, "");
       this.api.sendChatToServer(`/ac ${cleanMessage}`);
     }
   }
@@ -32,18 +33,11 @@ class TeamRanking {
 
   getMyTeamLetter() {
     const me = this.api.getCurrentPlayer();
-    if (!me?.uuid) {
-      return null;
-    }
-
+    if (!me?.uuid) return null;
     const myServerInfo = this.api.getPlayerInfo(me.uuid);
-    if (!myServerInfo?.name) {
-      return null;
-    }
-
+    if (!myServerInfo?.name) return null;
     const nameAsSeenByServer = myServerInfo.name;
     const myTeam = this.api.getPlayerTeam(nameAsSeenByServer);
-
     return this.getTeamLetter(myTeam?.prefix);
   }
 
@@ -79,9 +73,6 @@ class TeamRanking {
 
     await Promise.all(
       playerNames.map(async (playerName) => {
-        const player = this.api.getPlayerByName(playerName);
-        if (!player) return;
-
         const team = this.api.getPlayerTeam(playerName);
         const teamLetter = this.getTeamLetter(team?.prefix);
 
@@ -92,11 +83,12 @@ class TeamRanking {
 
         if (!teamLetter || teamLetter === myTeamLetter) return;
 
-        const stats = await this.apiService.getPlayerStats(playerName);
+        const realName =
+          this.bwu.resolvedNicks.get(playerName.toLowerCase()) || playerName;
+
+        const stats = await this.apiService.getPlayerStats(realName);
         const fkdr =
-          stats && !stats.isNicked && stats.fkdr !== undefined
-            ? stats.fkdr
-            : 5.0;
+          stats && !stats.isNicked && stats.fkdr !== undefined ? stats.fkdr : 5;
         const stars =
           stats && !stats.isNicked && stats.stars !== undefined
             ? stats.stars
@@ -122,9 +114,7 @@ class TeamRanking {
   }
 
   async displayRanking(teamsData, isSolosMode, rankingSent) {
-    if (rankingSent) {
-      return;
-    }
+    if (rankingSent) return;
 
     const alwaysPrivate = this.api.config.get("privateRanking.alwaysPrivate");
     const useSeparateMessages = this.api.config.get(
@@ -217,4 +207,3 @@ class TeamRanking {
 }
 
 module.exports = TeamRanking;
-

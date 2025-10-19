@@ -17,7 +17,14 @@ class GameHandler {
     // New auto who by me (work for any dream mode and duels (: )
     const divider =
       "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬";
-    const validTitles = ["Bed Wars", "Bed Wars Duels"];
+    const validTitles = [
+      "Bed Wars Lucky Blocks",
+      "Bed Wars Ultimate",
+      "Bed Wars Swappage",
+      "Bed Wars Duels",
+      "Bed Wars Rush",
+      "Bed Wars",
+    ];
 
     if (
       lastCleanMessage &&
@@ -54,4 +61,3 @@ class GameHandler {
 }
 
 module.exports = GameHandler;
-
