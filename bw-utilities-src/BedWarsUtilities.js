@@ -122,6 +122,7 @@ class BedWarsUtilities {
         .description("Set your Polsu API key")
         .argument("<apikey>", { description: "Your Polsu API key" })
         .handler((ctx) => this.commandHandler.handleSetPolsuCommand(ctx));
+
       registry
         .command("setqdmsg")
         .description("Sets a queue dodge message for a slot (1-5).")
@@ -143,6 +144,28 @@ class BedWarsUtilities {
         .description("Sends a saved queue dodge message manually.")
         .argument("<slot>", { description: "Slot number (1-5)" })
         .handler((ctx) => this.commandHandler.handleQdmsgCommand(ctx));
+
+      registry
+        .command("setsniped")
+        .description("Sets a sniped message for a slot (1-5).")
+        .argument("<slot>", { description: "Slot number (1-5)" })
+        .argument("message", {
+          description: "The message to save",
+          optional: true,
+          type: "greedy",
+        })
+        .handler((ctx) => this.commandHandler.handleSetSnipedCommand(ctx));
+
+      registry
+        .command("listsniped")
+        .description("Lists all saved sniped messages.")
+        .handler((ctx) => this.commandHandler.handleListSnipedCommand(ctx));
+
+      registry
+        .command("sniped")
+        .description("Sends a saved sniped message.")
+        .argument("<slot>", { description: "Slot number (1-5)" })
+        .handler((ctx) => this.commandHandler.handleSnipedCommand(ctx));
     });
   }
 
