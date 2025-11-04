@@ -122,6 +122,27 @@ class BedWarsUtilities {
         .description("Set your Polsu API key")
         .argument("<apikey>", { description: "Your Polsu API key" })
         .handler((ctx) => this.commandHandler.handleSetPolsuCommand(ctx));
+      registry
+        .command("setqdmsg")
+        .description("Sets a queue dodge message for a slot (1-5).")
+        .argument("<slot>", { description: "Slot number (1-5)" })
+        .argument("message", {
+          description: "The message to save",
+          optional: true,
+          type: "greedy",
+        })
+        .handler((ctx) => this.commandHandler.handleSetQdmsgCommand(ctx));
+
+      registry
+        .command("listqdmsg")
+        .description("Lists all saved queue dodge messages.")
+        .handler((ctx) => this.commandHandler.handleListQdmsgCommand(ctx));
+
+      registry
+        .command("qdmsg")
+        .description("Sends a saved queue dodge message manually.")
+        .argument("<slot>", { description: "Slot number (1-5)" })
+        .handler((ctx) => this.commandHandler.handleQdmsgCommand(ctx));
     });
   }
 
@@ -173,6 +194,8 @@ class BedWarsUtilities {
   async onChat(event) {
     try {
       const cleanMessage = event.message.replaceAll(/§[0-9a-fk-or]/g, "");
+
+      this.chatHandler.handleAutoMessage(cleanMessage);
 
       if (this.partyFinder.isActive) {
         this.partyFinder.handleChatMessage(cleanMessage);
