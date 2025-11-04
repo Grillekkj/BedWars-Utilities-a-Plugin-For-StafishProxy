@@ -44,6 +44,7 @@ class BedWarsUtilities {
     this.rankingSentThisMatch = false;
     this.resolvedNicks = new Map();
     this.realNameToNickMap = new Map();
+    this.apiKeyCheckPerformed = false;
   }
 
   _getDenickerInstance() {
@@ -55,8 +56,18 @@ class BedWarsUtilities {
     }
   }
 
+  handleFirstPlayerJoin() {
+    if (this.apiKeyCheckPerformed) {
+      return;
+    }
+
+    this.apiKeyCheckPerformed = true;
+
+    this._initialApiKeyCheck();
+  }
+
   registerHandlers() {
-    this.api.on("player_join", () => this._initialApiKeyCheck());
+    this.api.on("player_join", () => this.handleFirstPlayerJoin());
     this.api.on("chat", (event) => this.onChat(event));
     this.api.on("respawn", () => this.onWorldChange());
     this.api.on("denicker:nick_resolved", (data) => this.onNickResolved(data));
@@ -128,23 +139,34 @@ class BedWarsUtilities {
   async _initialApiKeyCheck() {
     setTimeout(async () => {
       const result = await this.apiService.testHypixelApiKey();
+
+      const fadeIn = 10; // 10 ticks = 0.5s
+      const stay = 40; // 40 ticks = 2.0s
+      const fadeOut = 10; // 10 ticks = 0.5s
+      const totalDurationMs = (fadeIn + stay + fadeOut) * 50;
+
       if (result.isValid) {
         this.api.sendTitle(
           "§6BW Utilities",
           "§aHypixel API key is functional!",
-          10, // Fade in (ticks)
-          40, // Stay (ticks)
-          10 // Fade out (ticks)
+          fadeIn,
+          stay,
+          fadeOut
         );
       } else {
         this.api.sendTitle(
           "§6BW Utilities",
           "§cHypixel API key is not functional! Please set a valid key",
-          10, // Fade in (ticks)
-          40, // Stay (ticks)
-          10 // Fade out (ticks)
+          fadeIn,
+          stay,
+          fadeOut
         );
       }
+
+      // Clear old title and subtitle sending empty
+      setTimeout(() => {
+        this.api.sendTitle(" ", " ", 0, 0, 0);
+      }, totalDurationMs + 50);
     }, 3000);
   }
 
