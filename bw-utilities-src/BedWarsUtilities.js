@@ -304,6 +304,8 @@ class BedWarsUtilities {
     try {
       const cleanMessage = event.message.replaceAll(/§[0-9a-fk-or]/g, "");
 
+      this._handlePartyLeaveMessage(cleanMessage);
+
       this.chatHandler.handleAutoMessage(cleanMessage);
 
       if (this.partyFinder.isActive) {
@@ -432,6 +434,32 @@ class BedWarsUtilities {
     );
 
     this.rankingSentThisMatch = true;
+  }
+
+  _handlePartyLeaveMessage(cleanMessage) {
+    const trimmedMessage = cleanMessage.trim();
+
+    const partyLeaveTriggers = [
+      "You left the party.",
+      "The party was disbanded because all invites expired and the party was empty.",
+    ];
+
+    let shouldRunCommand = false;
+
+    if (
+      partyLeaveTriggers.includes(trimmedMessage) ||
+      trimmedMessage.startsWith("You have been kicked from the party by")
+    ) {
+      shouldRunCommand = true;
+    }
+
+    if (shouldRunCommand) {
+      this.api.debugLog(
+        `[BWU] Party leave/disband/kick detected. Running /chat a.`
+      );
+
+      this.api.sendChatToServer("/chat a");
+    }
   }
 }
 
