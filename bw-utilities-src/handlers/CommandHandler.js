@@ -320,6 +320,37 @@ class CommandHandler {
       this.api.chat(`§cNo saved messages. Use /bwu setsniped <1-5> <message>`);
     }
   }
+
+  handlePingCommand(_ctx) {
+    try {
+      const player = this.api.getCurrentPlayer();
+      if (!player?.uuid) {
+        this.api.chat(
+          `${this.api.getPrefix()} §cCould not retrieve your player data.`
+        );
+        return;
+      }
+
+      const playerInfo = this.api.getPlayerInfo(player.uuid);
+
+      if (playerInfo?.ping === undefined) {
+        this.api.chat(
+          `${this.api.getPrefix()} §cCould not retrieve your ping at this time.`
+        );
+      } else {
+        this.api.chat(
+          `${this.api.getPrefix()} §aYour ping is: §f${playerInfo.ping}ms`
+        );
+      }
+    } catch (e) {
+      this.api.chat(
+        `${this.api.getPrefix()} §cAn error occurred while fetching ping: ${
+          e.message
+        }`
+      );
+      console.error(`[BWU Ping Error]: ${e.stack}`);
+    }
+  }
 }
 
 module.exports = CommandHandler;
