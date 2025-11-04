@@ -95,10 +95,15 @@ class TeamRanking {
             : 500;
 
         if (!teamsData[teamLetter]) {
-          teamsData[teamLetter] = { totalFkdr: 0, totalStars: 0 };
+          teamsData[teamLetter] = {
+            totalFkdr: 0,
+            totalStars: 0,
+            playerCount: 0,
+          };
         }
         teamsData[teamLetter].totalFkdr += fkdr;
         teamsData[teamLetter].totalStars += stars;
+        teamsData[teamLetter].playerCount += 1;
       })
     );
 
@@ -120,6 +125,8 @@ class TeamRanking {
     const useSeparateMessages = this.api.config.get(
       "teamRanking.separateMessages"
     );
+    const displayMode =
+      this.api.config.get("teamRanking.displayMode") || "total";
     const sendPrivately = isSolosMode || alwaysPrivate;
 
     const sortedTeams = Object.entries(teamsData)
@@ -128,6 +135,7 @@ class TeamRanking {
         name: TEAM_MAP[letter]?.name || "Unknown",
         totalFkdr: data.totalFkdr,
         totalStars: data.totalStars,
+        playerCount: data.playerCount,
       }))
       .sort((a, b) => b.totalFkdr - a.totalFkdr);
 
@@ -142,14 +150,26 @@ class TeamRanking {
       const teamColor = sendPrivately
         ? TEAM_MAP[team.letter]?.color || "§7"
         : "";
-      const teamInfo = `${index + 1}. ${teamColor}${team.name} §f(Stars: ${
-        team.totalStars
-      } | FKDR: ${team.totalFkdr.toFixed(1)})`;
+
+      let statsDisplay;
+      const count = Math.max(1, team.playerCount);
+
+      if (displayMode === "avg") {
+        const avgFkdr = (team.totalFkdr / count).toFixed(1);
+        const avgStars = Math.round(team.totalStars / count);
+        statsDisplay = `Stars: ${avgStars} | FKDR: ${avgFkdr}`;
+      } else {
+        statsDisplay = `Stars: ${
+          team.totalStars
+        } | FKDR: ${team.totalFkdr.toFixed(1)}`;
+      }
+
+      const teamInfo = `${index + 1}. ${teamColor}${
+        team.name
+      } §f(${statsDisplay})`;
 
       if (index === 0) {
-        const targetMessage = sendPrivately
-          ? "§c <- TARGET"
-          : "<- TARGET (no crossmap unless they start)";
+        const targetMessage = sendPrivately ? "§c <- TARGET" : "<- TARGET";
         return `${teamInfo} ${targetMessage}`;
       }
       return teamInfo;
