@@ -214,6 +214,112 @@ class CommandHandler {
       this.api.chat(`§cNo saved messages. Use /bwu setqdmsg <1-5> <message>`);
     }
   }
+
+  sendSnipedMessage(slot) {
+    if (!slot || slot < 1 || slot > 5) {
+      this.api.chat(
+        `${this.api.getPrefix()} §cInvalid slot. Use a number from 1 to 5.`
+      );
+      return;
+    }
+
+    const message = this.api.config.get(`snipedMsg.msg${slot}`);
+    if (!message || message.trim().length === 0) {
+      this.api.chat(
+        `${this.api.getPrefix()} §cSlot ${slot} is empty. Use /bwu setsniped ${slot} <message> to save.`
+      );
+      return;
+    }
+
+    this.api.sendChatToServer(`/ac ${message}`);
+  }
+
+  handleSnipedCommand(ctx) {
+    const slot = Number.parseInt(ctx.args.slot, 10);
+    if (Number.isNaN(slot)) {
+      this.api.chat(
+        `${this.api.getPrefix()} §cUsage: /bwu sniped <slot_number: 1-5>`
+      );
+      return;
+    }
+    this.sendSnipedMessage(slot);
+  }
+
+  handleSetSnipedCommand(ctx) {
+    const slot = Number.parseInt(ctx.args.slot, 10);
+    const messageArray = ctx.args.message;
+
+    if (Number.isNaN(slot) || slot < 1 || slot > 5) {
+      this.api.chat(
+        `${this.api.getPrefix()} §cUsage: /bwu setsniped <slot: 1-5> <message>`
+      );
+      return;
+    }
+
+    let finalMessage = "";
+    if (Array.isArray(messageArray) && messageArray.length > 0) {
+      finalMessage = messageArray.join(" ");
+    }
+
+    if (finalMessage.length === 0) {
+      this.api.config.set(`snipedMsg.msg${slot}`, "");
+      this.api.chat(
+        `${this.api.getPrefix()} §aMessage from Slot ${slot} has been cleared.`
+      );
+      return;
+    }
+
+    this.api.config.set(`snipedMsg.msg${slot}`, finalMessage);
+    this.api.chat(
+      `${this.api.getPrefix()} §aSlot ${slot} saved: §f${finalMessage}`
+    );
+  }
+
+  handleListSnipedCommand(_ctx) {
+    this.api.chat(`${this.api.getPrefix()} §6Saved Messages (Sniped):`);
+    let hasMessages = false;
+    for (let i = 1; i <= 5; i++) {
+      const msg = this.api.config.get(`snipedMsg.msg${i}`);
+      if (msg && msg.trim().length > 0) {
+        hasMessages = true;
+        const chatComponent = {
+          text: `§eSlot ${i}: §f${msg} `,
+          extra: [
+            {
+              text: "§7[Send]",
+              color: "gray",
+              hoverEvent: {
+                action: "show_text",
+                value: "§aClick to send this message",
+              },
+              clickEvent: {
+                action: "run_command",
+                value: `/bwu sniped ${i}`,
+              },
+            },
+            {
+              text: " §c[Edit]",
+              color: "red",
+              hoverEvent: {
+                action: "show_text",
+                value: "§eClick to edit this message",
+              },
+              clickEvent: {
+                action: "suggest_command",
+                value: `/bwu setsniped ${i} ${msg}`,
+              },
+            },
+          ],
+        };
+        this.api.chat(chatComponent);
+      } else {
+        this.api.chat(`§eSlot ${i}: §7[Empty]`);
+      }
+    }
+    if (!hasMessages) {
+      this.api.chat(`§cNo saved messages. Use /bwu setsniped <1-5> <message>`);
+    }
+  }
 }
 
 module.exports = CommandHandler;
