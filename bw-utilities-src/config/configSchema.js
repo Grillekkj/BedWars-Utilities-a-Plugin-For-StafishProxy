@@ -195,7 +195,7 @@ module.exports = [
     ],
   },
   {
-    label: "Queue Dodge Messages (qdmsg)",
+    label: "Queue Dodge Messages",
     description: "Sends a random message 10s before the game starts.",
     defaults: {
       autoQdmsg: {
