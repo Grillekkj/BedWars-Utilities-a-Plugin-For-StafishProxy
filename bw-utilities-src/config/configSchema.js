@@ -118,6 +118,37 @@ module.exports = [
     ],
   },
   {
+    label: "Auto Requeue (Game End)",
+    description: "Automatically run /requeue after a game finishes.",
+    defaults: {
+      autoRequeueGameEnd: {
+        enabled: true,
+        delay: 1000,
+      },
+    },
+    settings: [
+      {
+        type: "toggle",
+        key: "autoRequeueGameEnd.enabled",
+        text: ["OFF", "ON"],
+        description:
+          "Automatically executes /requeue when the game end message is detected.",
+      },
+      {
+        type: "cycle",
+        key: "autoRequeueGameEnd.delay",
+        description: "Delay before executing the command.",
+        values: [
+          { text: "0ms", value: 0 },
+          { text: "500ms", value: 500 },
+          { text: "1000ms", value: 1000 },
+          { text: "1500ms", value: 1500 },
+          { text: "2000ms", value: 2000 },
+        ],
+      },
+    ],
+  },
+  {
     label: "Auto /who",
     description:
       "Automatically run /who at the start of the match (Bedwars only)",
