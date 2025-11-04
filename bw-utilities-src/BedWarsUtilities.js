@@ -45,6 +45,9 @@ class BedWarsUtilities {
     this.resolvedNicks = new Map();
     this.realNameToNickMap = new Map();
     this.apiKeyCheckPerformed = false;
+    this.lastGameMode = null;
+    this._suppressNextLocraw = 0;
+    this._lastLocrawAt = 0;
   }
 
   _getDenickerInstance() {
@@ -64,13 +67,19 @@ class BedWarsUtilities {
     this.apiKeyCheckPerformed = true;
 
     this._initialApiKeyCheck();
+
+    setTimeout(() => this.runLocrawSilently(), 3000);
   }
 
   registerHandlers() {
-    this.api.on("player_join", () => this.handleFirstPlayerJoin());
-    this.api.on("chat", (event) => this.onChat(event));
-    this.api.on("respawn", () => this.onWorldChange());
-    this.api.on("denicker:nick_resolved", (data) => this.onNickResolved(data));
+    this.api.on("player_join", this.handleFirstPlayerJoin.bind(this));
+    this.api.on("chat", this.onChat.bind(this));
+    this.api.on("respawn", this.onWorldChange.bind(this));
+    this.api.on("denicker:nick_resolved", this.onNickResolved.bind(this));
+    this.api.intercept(
+      "packet:server:chat",
+      this.onServerChatPacket.bind(this)
+    );
 
     this.api.commands((registry) => {
       registry
@@ -169,6 +178,78 @@ class BedWarsUtilities {
     });
   }
 
+  extractJsonFromLine(line) {
+    const clean = String(line)
+      .replaceAll(/§[0-9a-fk-or]/gi, "")
+      .trim();
+    const start = clean.indexOf("{");
+    const end = clean.lastIndexOf("}");
+    if (start === -1 || end === -1 || end <= start) return null;
+    return clean.slice(start, end + 1);
+  }
+
+  runLocrawSilently() {
+    const now = Date.now();
+    if (now - this._lastLocrawAt < 250) return;
+    this._lastLocrawAt = now;
+    this._suppressNextLocraw++;
+    this.api.sendChatToServer("/locraw");
+  }
+
+  consumeLocraw(jsonText) {
+    try {
+      const data = JSON.parse(jsonText);
+      const isLobby =
+        (typeof data.lobbyname === "string" && data.lobbyname.length > 0) ||
+        data.server === "lobby";
+
+      if (
+        !isLobby &&
+        typeof data.mode === "string" &&
+        typeof data.gametype === "string"
+      ) {
+        const gt = data.gametype.toUpperCase();
+        if (gt === "BEDWARS") {
+          this.lastGameMode = data.mode;
+          this.api.debugLog(
+            `[BWU] Last game mode updated to: ${this.lastGameMode}`
+          );
+        }
+      } else if (isLobby) {
+        setTimeout(() => this.runLocrawSilently(), 1000);
+      }
+    } catch (e) {
+      this.api.debugLog(`[BWU] Failed to parse locraw: ${e.message}`);
+    }
+  }
+
+  onServerChatPacket(event) {
+    try {
+      if (this._suppressNextLocraw > 0) {
+        let plainText = "";
+        const messageData = JSON.parse(event.data.message);
+        if (typeof messageData.text === "string") plainText += messageData.text;
+        if (Array.isArray(messageData.extra)) {
+          plainText += messageData.extra
+            .map((e) => (typeof e === "string" ? e : e?.text || ""))
+            .join("");
+        }
+
+        const plain = plainText.replaceAll(/§[0-9a-fk-or]/gi, "");
+        const json = this.extractJsonFromLine(plain);
+
+        if (json?.includes('"server"')) {
+          event.cancel();
+          this._suppressNextLocraw--;
+          this.consumeLocraw(json);
+          return;
+        }
+      }
+    } catch (e) {
+      this.api.debugLog(`[BWU] Something went wrong: ${e.message}`);
+    }
+  }
+
   onNickResolved({ nickName, realName }) {
     if (this.resolvedNicks.has(nickName.toLowerCase())) return;
 
@@ -224,10 +305,22 @@ class BedWarsUtilities {
         this.partyFinder.handleChatMessage(cleanMessage);
       }
 
+      if (
+        this.gameHandler.isBedwarsStartMessage(
+          cleanMessage,
+          this.lastCleanMessage
+        )
+      ) {
+        this.runLocrawSilently();
+      }
+
       await this.gameHandler.handleGameStart(
         cleanMessage,
         this.lastCleanMessage
       );
+
+      await this.gameHandler.handleGameEnd(cleanMessage, this.lastGameMode);
+
       this.lastCleanMessage = cleanMessage;
 
       const whoMatch = cleanMessage.match(/^ONLINE: (.*)$/);
@@ -305,6 +398,7 @@ class BedWarsUtilities {
   }
 
   onWorldChange() {
+    setTimeout(() => this.runLocrawSilently(), 250);
     this.tabManager.clearManagedPlayers("all");
     this.gameHandler.resetGameState();
     this.lastCleanMessage = null;
