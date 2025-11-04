@@ -195,6 +195,53 @@ module.exports = [
     ],
   },
   {
+    label: "Queue Dodge Messages (qdmsg)",
+    description: "Sends a random message 10s before the game starts.",
+    defaults: {
+      autoQdmsg: {
+        enabled: false,
+        msg1: "",
+        msg2: "",
+        msg3: "",
+        msg4: "",
+        msg5: "",
+      },
+    },
+    settings: [
+      {
+        key: "autoQdmsg.enabled",
+        type: "toggle",
+        text: ["OFF", "ON"],
+        description: "Enable or disable automatically sending a message.",
+      },
+      {
+        key: "autoQdmsg.msg1",
+        type: "text",
+        description: "Message Slot 1. Use: /bwu setqdmsg 1 <message>",
+      },
+      {
+        key: "autoQdmsg.msg2",
+        type: "text",
+        description: "Message Slot 2. Use: /bwu setqdmsg 2 <message>",
+      },
+      {
+        key: "autoQdmsg.msg3",
+        type: "text",
+        description: "Message Slot 3. Use: /bwu setqdmsg 3 <message>",
+      },
+      {
+        key: "autoQdmsg.msg4",
+        type: "text",
+        description: "Message Slot 4. Use: /bwu setqdmsg 4 <message>",
+      },
+      {
+        key: "autoQdmsg.msg5",
+        type: "text",
+        description: "Message Slot 5. Use: /bwu setqdmsg 5 <message>",
+      },
+    ],
+  },
+  {
     label: "Stats - Level (Stars)",
     description: "Show the level (stars).",
     defaults: {
