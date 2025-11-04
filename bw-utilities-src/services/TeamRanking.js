@@ -107,13 +107,8 @@ class TeamRanking {
       })
     );
 
-    let singlePlayerTeamCount = 0;
-    for (const teamSize of Object.values(teamPlayerCounts)) {
-      if (teamSize === 1) {
-        singlePlayerTeamCount++;
-      }
-    }
-    const isSolosMode = singlePlayerTeamCount >= 2;
+    const myTeamSize = teamPlayerCounts[myTeamLetter] || 1;
+    const isSolosMode = myTeamSize <= 1;
 
     return { teamsData, isSolosMode };
   }
