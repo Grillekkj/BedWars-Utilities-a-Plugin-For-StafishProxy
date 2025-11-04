@@ -104,6 +104,11 @@ class BedWarsUtilities {
         .handler((ctx) => this.commandHandler.handleFindCommand(ctx));
 
       registry
+        .command("ping")
+        .description("Shows your current ping to the server.")
+        .handler((ctx) => this.commandHandler.handlePingCommand(ctx));
+
+      registry
         .command("stats")
         .description("Shows the Bedwars statistics for a player.")
         .argument("<nickname>", { description: "The player to check" })
