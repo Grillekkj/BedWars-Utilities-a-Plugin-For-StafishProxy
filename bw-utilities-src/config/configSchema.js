@@ -74,6 +74,7 @@ module.exports = [
       teamRanking: {
         enabled: true,
         separateMessages: false,
+        displayMode: "total",
       },
       privateRanking: {
         alwaysPrivate: false,
@@ -85,6 +86,15 @@ module.exports = [
         type: "toggle",
         text: ["OFF", "ON"],
         description: "Enable or disable automatic team ranking.",
+      },
+      {
+        key: "teamRanking.displayMode",
+        type: "cycle",
+        description: "Display total or average stats in team ranking.",
+        values: [
+          { text: "Stat Mode: Total", value: "total" },
+          { text: "Stat Mode: Average", value: "avg" },
+        ],
       },
       {
         key: "privateRanking.alwaysPrivate",
