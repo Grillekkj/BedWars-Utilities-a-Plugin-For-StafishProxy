@@ -242,6 +242,46 @@ module.exports = [
     ],
   },
   {
+    label: "Sniped Messages",
+    description: "Saves messages for the /bwu sniped command.",
+    defaults: {
+      snipedMsg: {
+        msg1: "",
+        msg2: "",
+        msg3: "",
+        msg4: "",
+        msg5: "",
+      },
+    },
+    settings: [
+      {
+        key: "snipedMsg.msg1",
+        type: "text",
+        description: "Message Slot 1. Use: /bwu setsniped 1 <message>",
+      },
+      {
+        key: "snipedMsg.msg2",
+        type: "text",
+        description: "Message Slot 2. Use: /bwu setsniped 2 <message>",
+      },
+      {
+        key: "snipedMsg.msg3",
+        type: "text",
+        description: "Message Slot 3. Use: /bwu setsniped 3 <message>",
+      },
+      {
+        key: "snipedMsg.msg4",
+        type: "text",
+        description: "Message Slot 4. Use: /bwu setsniped 4 <message>",
+      },
+      {
+        key: "snipedMsg.msg5",
+        type: "text",
+        description: "Message Slot 5. Use: /bwu setsniped 5 <message>",
+      },
+    ],
+  },
+  {
     label: "Stats - Level (Stars)",
     description: "Show the level (stars).",
     defaults: {
