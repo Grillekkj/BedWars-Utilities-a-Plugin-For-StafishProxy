@@ -152,45 +152,6 @@ class FileManager {
         });
     });
   }
-
-  cleanup() {
-    try {
-      const sevenDays = 7 * 24 * 60 * 60 * 1000;
-      const now = Date.now();
-
-      const markers = [
-        this.updateInProgressMarker,
-        this.lastUpdateCheckMarker,
-        this.failedUpdateMarker,
-      ];
-
-      for (const marker of markers) {
-        if (fs.existsSync(marker)) {
-          try {
-            const markerContent = fs.readFileSync(marker, "utf8");
-            let markerTime;
-
-            try {
-              const parsed = JSON.parse(markerContent);
-              markerTime = parsed.timestamp || Date.now();
-            } catch (e) {
-              this.logDebug(e);
-              markerTime = Number.parseInt(markerContent) || Date.now();
-            }
-
-            if (now - markerTime > sevenDays) {
-              fs.unlinkSync(marker);
-              this.logDebug(`Cleaned up old marker: ${marker}`);
-            }
-          } catch (e) {
-            this.logDebug(`Error cleaning marker ${marker}: ${e.message}`);
-          }
-        }
-      }
-    } catch (e) {
-      this.logDebug(`Error during cleanup: ${e.message}`);
-    }
-  }
 }
 
 module.exports = { FileManager };
