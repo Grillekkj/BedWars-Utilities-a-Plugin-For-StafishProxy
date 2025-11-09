@@ -422,18 +422,18 @@ class BedWarsUtilities {
   }
 
   async processPlayerData(originalPlayerNames, resolvedPlayerNames) {
-    for (let i = 0; i < originalPlayerNames.length; i++) {
-      const originalName = originalPlayerNames[i];
-      const resolvedName = resolvedPlayerNames[i];
-      this.tabManager.addPlayerStatsToTab(originalName, resolvedName);
-    }
-
     await this.teamRanking.processAndDisplayRanking(
       originalPlayerNames,
       this.rankingSentThisMatch
     );
 
     this.rankingSentThisMatch = true;
+
+    for (let i = 0; i < originalPlayerNames.length; i++) {
+      const originalName = originalPlayerNames[i];
+      const resolvedName = resolvedPlayerNames[i];
+      await this.tabManager.addPlayerStatsToTab(originalName, resolvedName);
+    }
   }
 
   _handlePartyLeaveMessage(cleanMessage) {
