@@ -310,6 +310,7 @@ class BedWarsUtilities {
       const cleanMessage = event.message.replaceAll(/§[0-9a-fk-or]/g, "");
 
       this._handlePartyLeaveMessage(cleanMessage);
+      this._handlePartyJoinMessage(cleanMessage);
 
       this.chatHandler.handleAutoMessage(cleanMessage);
 
@@ -441,6 +442,21 @@ class BedWarsUtilities {
     }
   }
 
+  _handlePartyJoinMessage(cleanMessage) {
+    const trimmedMessage = cleanMessage.trim();
+
+    const joinRegex = /^You have joined (.*)'s party!$/;
+
+    const inviteRegex =
+      / invited (.*) to the party! They have 60 seconds to accept\.$/;
+
+    if (joinRegex.test(trimmedMessage) || inviteRegex.test(trimmedMessage)) {
+      this.api.debugLog(`[BWU] Party join/create detected. Sending /chat p.`);
+
+      this.api.sendChatToServer("/chat p");
+    }
+  }
+
   _handlePartyLeaveMessage(cleanMessage) {
     const trimmedMessage = cleanMessage.trim();
 
@@ -449,16 +465,10 @@ class BedWarsUtilities {
       "The party was disbanded because all invites expired and the party was empty.",
     ];
 
-    let shouldRunCommand = false;
-
     if (
       partyLeaveTriggers.includes(trimmedMessage) ||
       trimmedMessage.startsWith("You have been kicked from the party by")
     ) {
-      shouldRunCommand = true;
-    }
-
-    if (shouldRunCommand) {
       this.api.debugLog(
         `[BWU] Party leave/disband/kick detected. Running /chat a.`
       );
