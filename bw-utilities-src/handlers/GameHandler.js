@@ -142,7 +142,7 @@ class GameHandler {
         return;
       }
 
-      const delay = this.api.config.get("autoRequeueGameEnd.delay") || 1000;
+      const delay = this.api.config.get("autoRequeueGameEnd.delay") || 0;
       const triggerReason = isRewardSummary ? "Game end" : "Team eliminated";
 
       this.api.chat(
