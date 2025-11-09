@@ -215,7 +215,7 @@ class CommandHandler {
     }
   }
 
-  sendSnipedMessage(slot) {
+  sendSnipedMessage(slot, channel) {
     if (!slot || slot < 1 || slot > 5) {
       this.api.chat(
         `${this.api.getPrefix()} §cInvalid slot. Use a number from 1 to 5.`
@@ -231,18 +231,23 @@ class CommandHandler {
       return;
     }
 
-    this.api.sendChatToServer(`/ac ${message}`);
+    const commandPrefix =
+      channel && channel.toLowerCase() === "ac" ? "/ac" : "/shout";
+
+    this.api.sendChatToServer(`${commandPrefix} ${message}`);
   }
 
   handleSnipedCommand(ctx) {
     const slot = Number.parseInt(ctx.args.slot, 10);
+    const channel = ctx.args.channel;
+
     if (Number.isNaN(slot)) {
       this.api.chat(
-        `${this.api.getPrefix()} §cUsage: /bwu sniped <slot_number: 1-5>`
+        `${this.api.getPrefix()} §cUsage: /bwu sniped <slot_number: 1-5> [ac]`
       );
       return;
     }
-    this.sendSnipedMessage(slot);
+    this.sendSnipedMessage(slot, channel);
   }
 
   handleSetSnipedCommand(ctx) {
