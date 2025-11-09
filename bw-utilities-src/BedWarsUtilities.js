@@ -48,6 +48,7 @@ class BedWarsUtilities {
     this.lastGameMode = null;
     this._suppressNextLocraw = 0;
     this._lastLocrawAt = 0;
+    this.lastQdmsg = null;
   }
 
   _getDenickerInstance() {
