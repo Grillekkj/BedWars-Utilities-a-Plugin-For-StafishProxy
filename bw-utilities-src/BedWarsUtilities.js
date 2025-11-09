@@ -180,6 +180,10 @@ class BedWarsUtilities {
         .command("sniped")
         .description("Sends a saved sniped message.")
         .argument("<slot>", { description: "Slot number (1-5)" })
+        .argument("[channel]", {
+          description: "Chat channel ('ac' for all chat, default is /shout)",
+          optional: true,
+        })
         .handler((ctx) => this.commandHandler.handleSnipedCommand(ctx));
     });
   }
