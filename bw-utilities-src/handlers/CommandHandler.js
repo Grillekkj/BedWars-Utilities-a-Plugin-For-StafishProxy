@@ -1,9 +1,170 @@
+const path = require("node:path");
+const fs = require("node:fs");
+
 class CommandHandler {
   constructor(api, tabManager, chatHandler, partyFinder) {
     this.api = api;
     this.tabManager = tabManager;
     this.chatHandler = chatHandler;
     this.partyFinder = partyFinder;
+    this.fs = fs;
+    const baseDir = process.pkg
+      ? path.dirname(process.execPath)
+      : path.join(__dirname, "..", "..", "..");
+
+    const dataDir = path.join(baseDir, "data");
+
+    if (!this.fs.existsSync(dataDir)) {
+      this.fs.mkdirSync(dataDir, { recursive: true });
+    }
+
+    this.macrosFilePath = path.join(dataDir, "bwu_macros.json");
+  }
+
+  _getMacros() {
+    try {
+      if (this.fs.existsSync(this.macrosFilePath)) {
+        const data = this.fs.readFileSync(this.macrosFilePath, "utf8");
+        return JSON.parse(data);
+      }
+    } catch (e) {
+      this.api.debugLog(`[BWU] Error reading macros file: ${e.message}`);
+      return {};
+    }
+    return {};
+  }
+
+  _saveMacros(macros) {
+    try {
+      const data = JSON.stringify(macros, null, 2);
+      this.fs.writeFileSync(this.macrosFilePath, data, "utf8");
+    } catch (e) {
+      this.api.debugLog(`[BWU] Error saving macros file: ${e.message}`);
+    }
+  }
+
+  handleSetMacroCommand(ctx) {
+    const name = ctx.args.name;
+    const contentArray = ctx.args.content;
+
+    if (!name || !contentArray || contentArray.length === 0) {
+      this.api.chat(
+        `${this.api.getPrefix()} §cUsage: /bwu setmacro <name> <content...>`
+      );
+      return;
+    }
+
+    const content = contentArray.join(" ");
+    const macros = this._getMacros();
+
+    macros[name.toLowerCase()] = content;
+
+    this._saveMacros(macros);
+    this.api.chat(
+      `${this.api.getPrefix()} §aMacro '${name}' saved with content: §f${content}`
+    );
+  }
+
+  handleDelMacroCommand(ctx) {
+    const name = ctx.args.name;
+    if (!name) {
+      this.api.chat(`${this.api.getPrefix()} §cUsage: /bwu delmacro <name>`);
+      return;
+    }
+
+    const nameLower = name.toLowerCase();
+    const macros = this._getMacros();
+
+    if (macros[nameLower]) {
+      delete macros[nameLower];
+      this._saveMacros(macros);
+      this.api.chat(
+        `${this.api.getPrefix()} §aMacro '${name}' successfully removed!`
+      );
+    } else {
+      this.api.chat(`${this.api.getPrefix()} §cMacro '${name}' not found.`);
+    }
+  }
+
+  handleListMacrosCommand(ctx) {
+    const macros = this._getMacros();
+    const names = Object.keys(macros);
+
+    if (names.length === 0) {
+      this.api.chat(
+        `${this.api.getPrefix()} §cYou have no saved macros. Use /bwu setmacro <name> <content...>`
+      );
+      return;
+    }
+
+    this.api.chat(`${this.api.getPrefix()} §6Saved Macros (${names.length}):`);
+
+    for (const name of names) {
+      const content = macros[name];
+
+      const chatComponent = {
+        text: `§e${name}: §f${content} `,
+        extra: [
+          {
+            text: "§a[Run]",
+            color: "green",
+            hoverEvent: {
+              action: "show_text",
+              value: "§aClick to run /bwu m " + name,
+            },
+            clickEvent: {
+              action: "run_command",
+              value: `/bwu m ${name}`,
+            },
+          },
+          {
+            text: " §e[Edit]",
+            color: "yellow",
+            hoverEvent: {
+              action: "show_text",
+              value: "§eClick to edit this macro",
+            },
+            clickEvent: {
+              action: "suggest_command",
+              value: `/bwu setmacro ${name} ${content}`,
+            },
+          },
+          {
+            text: " §c[Remove]",
+            color: "red",
+            hoverEvent: {
+              action: "show_text",
+              value: "§cClick to remove /bwu delmacro " + name,
+            },
+            clickEvent: {
+              action: "run_command",
+              value: `/bwu delmacro ${name}`,
+            },
+          },
+        ],
+      };
+      this.api.chat(chatComponent);
+    }
+  }
+
+  handleRunMacroCommand(ctx) {
+    const name = ctx.args.name;
+    if (!name) {
+      this.api.chat(`${this.api.getPrefix()} §cUsage: /bwu m <name>`);
+      return;
+    }
+
+    const nameLower = name.toLowerCase();
+    const macros = this._getMacros();
+    const content = macros[nameLower];
+
+    if (content) {
+      this.api.sendChatToServer(content);
+    } else {
+      this.api.chat(
+        `${this.api.getPrefix()} §cMacro '${name}' not found. Use /bwu macros to list.`
+      );
+    }
   }
 
   handleFindCommand(ctx) {

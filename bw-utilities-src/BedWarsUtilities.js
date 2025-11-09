@@ -185,6 +185,37 @@ class BedWarsUtilities {
           optional: true,
         })
         .handler((ctx) => this.commandHandler.handleSnipedCommand(ctx));
+
+      registry
+        .command("setmacro")
+        .description("Saves or updates a chat macro.")
+        .argument("<name>", { description: "The name used to call the macro." })
+        .argument("content", {
+          description: "The command or message to be saved.",
+          type: "greedy",
+        })
+        .handler((ctx) => this.commandHandler.handleSetMacroCommand(ctx));
+
+      registry
+        .command("delmacro")
+        .description("Removes a macro.")
+        .argument("<name>", {
+          description: "The name of the macro to be removed.",
+        })
+        .handler((ctx) => this.commandHandler.handleDelMacroCommand(ctx));
+
+      registry
+        .command("macros")
+        .description("Lists all saved macros.")
+        .handler((ctx) => this.commandHandler.handleListMacrosCommand(ctx));
+
+      registry
+        .command("m")
+        .description("Executes a saved macro.")
+        .argument("<name>", {
+          description: "The name of the macro to execute.",
+        })
+        .handler((ctx) => this.commandHandler.handleRunMacroCommand(ctx));
     });
   }
 
