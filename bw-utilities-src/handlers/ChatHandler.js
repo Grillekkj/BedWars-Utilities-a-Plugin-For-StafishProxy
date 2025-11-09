@@ -121,8 +121,19 @@ class ChatHandler {
         return;
       }
 
+      let possibleMessages = [...validMessages];
+
+      if (this.bwuInstance.lastQdmsg && validMessages.length > 1) {
+        possibleMessages = validMessages.filter(
+          (msg) => msg !== this.bwuInstance.lastQdmsg
+        );
+      }
+
       const randomMsg =
-        validMessages[Math.floor(Math.random() * validMessages.length)];
+        possibleMessages[Math.floor(Math.random() * possibleMessages.length)];
+
+      this.bwuInstance.lastQdmsg = randomMsg;
+
       this.api.sendChatToServer(`/ac ${randomMsg}`);
     } catch (e) {
       console.error(`[BWU] Error on handleAutoMessage: ${e.message}`);
