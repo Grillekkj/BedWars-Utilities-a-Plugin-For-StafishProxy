@@ -2,12 +2,20 @@ const path = require("node:path");
 const fs = require("node:fs");
 
 class CommandHandler {
-  constructor(api, apiService, tabManager, chatHandler, partyFinder) {
+  constructor(
+    api,
+    apiService,
+    tabManager,
+    chatHandler,
+    partyFinder,
+    bwuInstance
+  ) {
     this.api = api;
     this.apiService = apiService;
     this.tabManager = tabManager;
     this.chatHandler = chatHandler;
     this.partyFinder = partyFinder;
+    this.bwu = bwuInstance;
     this.fs = fs;
     const baseDir = process.pkg
       ? path.dirname(process.execPath)
@@ -20,6 +28,11 @@ class CommandHandler {
     }
 
     this.macrosFilePath = path.join(dataDir, "bwu_macros.json");
+
+    this.shoutCooldown = 65000;
+    this.lastShoutTime = 0;
+    this.pendingShoutMessage = null;
+    this.shoutTimer = null;
   }
 
   _getMacros() {
@@ -396,7 +409,58 @@ class CommandHandler {
     const commandPrefix =
       channel && channel.toLowerCase() === "ac" ? "/ac" : "/shout";
 
-    this.api.sendChatToServer(`${commandPrefix} ${message}`);
+    if (commandPrefix === "/shout") {
+      this.sendShoutWithCooldown(message);
+    } else {
+      this.api.sendChatToServer(`${commandPrefix} ${message}`);
+    }
+  }
+
+  sendShoutWithCooldown(message) {
+    const now = Date.now();
+    const timeSinceLastShout = now - this.lastShoutTime;
+    const remainingCooldown = this.shoutCooldown - timeSinceLastShout;
+
+    if (timeSinceLastShout >= this.shoutCooldown) {
+      this.bwu._bypassShoutInterception = true;
+      this.api.sendChatToServer(`/shout ${message}`);
+      this.lastShoutTime = now;
+      this.pendingShoutMessage = null;
+
+      if (this.shoutTimer) {
+        clearTimeout(this.shoutTimer);
+        this.shoutTimer = null;
+      }
+    } else {
+      this.pendingShoutMessage = message;
+
+      if (this.shoutTimer) {
+        clearTimeout(this.shoutTimer);
+      }
+
+      this.shoutTimer = setTimeout(() => {
+        if (this.pendingShoutMessage) {
+          this.bwu._bypassShoutInterception = true;
+          this.api.sendChatToServer(`/shout ${this.pendingShoutMessage}`);
+          this.lastShoutTime = Date.now();
+          this.pendingShoutMessage = null;
+          this.shoutTimer = null;
+        }
+      }, remainingCooldown);
+
+      const secondsLeft = Math.ceil(remainingCooldown / 1000);
+      this.api.chat(
+        `${this.api.getPrefix()} §eShout queued! Will send in §f${secondsLeft}s §e(cooldown active)`
+      );
+    }
+  }
+
+  cancelPendingShout() {
+    if (this.shoutTimer) {
+      clearTimeout(this.shoutTimer);
+      this.shoutTimer = null;
+      this.pendingShoutMessage = null;
+    }
   }
 
   handleSnipedCommand(ctx) {

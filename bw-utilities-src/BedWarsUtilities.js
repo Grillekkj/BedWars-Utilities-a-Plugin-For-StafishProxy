@@ -36,7 +36,8 @@ class BedWarsUtilities {
       this.apiService,
       this.tabManager,
       this.chatHandler,
-      this.partyFinder
+      this.partyFinder,
+      this
     );
     this.gameHandler = new GameHandler(api, this.chatHandler, this.tabManager);
     this.autoStatsMode = false;
@@ -51,6 +52,7 @@ class BedWarsUtilities {
     this._suppressNextLocraw = 0;
     this._lastLocrawAt = 0;
     this.lastQdmsg = null;
+    this._bypassShoutInterception = false;
   }
 
   _getDenickerInstance() {
@@ -82,6 +84,10 @@ class BedWarsUtilities {
     this.api.intercept(
       "packet:server:chat",
       this.onServerChatPacket.bind(this)
+    );
+    this.api.intercept(
+      "packet:client:chat",
+      this.onClientChatPacket.bind(this)
     );
 
     CommandRegistry.register(this.api, this.commandHandler);
@@ -156,6 +162,35 @@ class BedWarsUtilities {
       }
     } catch (e) {
       this.api.debugLog(`[BWU] Something went wrong: ${e.message}`);
+    }
+  }
+
+  onClientChatPacket(event) {
+    try {
+      const message = event.data.message;
+
+      if (message && message.toLowerCase().startsWith("/shout ")) {
+        if (this._bypassShoutInterception) {
+          this._bypassShoutInterception = false;
+          return;
+        }
+
+        event.cancel();
+
+        const shoutMessage = message.substring(7).trim();
+
+        if (shoutMessage.length > 0) {
+          this.commandHandler.sendShoutWithCooldown(shoutMessage);
+        } else {
+          // Bruh remove this
+          this.api.chat(
+            `${this.api.getPrefix()} §cPlease provide a message to shout!`
+          );
+        }
+      }
+    } catch (e) {
+      console.error(`[BWU] Error intercepting client chat: ${e.message}`);
+      console.error(e.stack);
     }
   }
 
@@ -313,6 +348,7 @@ class BedWarsUtilities {
     setTimeout(() => this.runLocrawSilently(), 250);
     this.tabManager.clearManagedPlayers("all");
     this.gameHandler.resetGameState();
+    this.commandHandler.cancelPendingShout();
     this.lastCleanMessage = null;
     this.requeueTriggered = false;
     this.rankingSentThisMatch = false;
