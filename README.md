@@ -16,7 +16,7 @@
 - **Smart Cache:** Reduces API spam by caching stats & ping.  
 - **Easy Commands:** `/bwu stats`, `/bwu setthreshold`, `/bwu setkey`, and more.  
 
-🛠 **Fully configurable** — Hypixel API, Polsu API, cache timers, thresholds, nicknames, and more.  
+🛠 **Fully configurable** — Hypixel API, Aurora API, cache timers, thresholds, nicknames, and more.  
 💡 Perfect for competitive BedWars players who want efficiency and automation.
 
 ---
@@ -41,14 +41,14 @@ This version **completely replaces and improves** the old **BedWars Utilities by
 ### 🔑 Step 3: API Keys Required
 You’ll need two API keys for full functionality:
 - **Hypixel API Key:** [https://developer.hypixel.net/](https://developer.hypixel.net/)
-- **Polsu API Key:** [https://polsu.xyz/api/apikey](https://polsu.xyz/api/apikey)
+- **Aurora API Key:** [Aurora Discord Bot](https://discordapp.com/oauth2/authorize?client_id=1244205279697174539)
 
 ### 🧠 Step 4: First Setup
 After installing and starting your server:
 1. Run the following commands in-game:
    ```
    /bwu setkey <your Hypixel API key>
-   /bwu setpolsu <your Polsu API key>
+   /bwu setaurora <your Aurora API key>
    ```
 2. Then check your configuration and adjust the plugin to your needs.  
 

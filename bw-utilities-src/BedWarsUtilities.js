@@ -4,9 +4,10 @@ const StatsFormatter = require("./utils/StatsFormatter");
 const ChatHandler = require("./handlers/ChatHandler");
 const CommandHandler = require("./handlers/CommandHandler");
 const GameHandler = require("./handlers/GameHandler");
-const TeamRanking = require("./services/TeamRanking");
-const TabManager = require("./services/TabManager");
-const PartyFinder = require("./services/PartyFinder");
+const TeamRanking = require("./features/TeamRanking");
+const TabManager = require("./features/TabManager");
+const PartyFinder = require("./features/PartyFinder");
+const CommandRegistry = require("./core/CommandRegistry");
 
 class BedWarsUtilities {
   constructor(api) {
@@ -32,9 +33,11 @@ class BedWarsUtilities {
     );
     this.commandHandler = new CommandHandler(
       api,
+      this.apiService,
       this.tabManager,
       this.chatHandler,
-      this.partyFinder
+      this.partyFinder,
+      this
     );
     this.gameHandler = new GameHandler(api, this.chatHandler, this.tabManager);
     this.autoStatsMode = false;
@@ -44,6 +47,12 @@ class BedWarsUtilities {
     this.rankingSentThisMatch = false;
     this.resolvedNicks = new Map();
     this.realNameToNickMap = new Map();
+    this.apiKeyCheckPerformed = false;
+    this.lastGameMode = null;
+    this._suppressNextLocraw = 0;
+    this._lastLocrawAt = 0;
+    this.lastQdmsg = null;
+    this._bypassShoutInterception = false;
   }
 
   _getDenickerInstance() {
@@ -55,63 +64,134 @@ class BedWarsUtilities {
     }
   }
 
+  handleFirstPlayerJoin() {
+    if (this.apiKeyCheckPerformed) {
+      return;
+    }
+
+    this.apiKeyCheckPerformed = true;
+
+    this._initialApiKeyCheck();
+
+    setTimeout(() => this.runLocrawSilently(), 3000);
+  }
+
   registerHandlers() {
-    this.api.on("player_join", () => this._initialApiKeyCheck());
-    this.api.on("chat", (event) => this.onChat(event));
-    this.api.on("respawn", () => this.onWorldChange());
-    this.api.on("denicker:nick_resolved", (data) => this.onNickResolved(data));
+    this.api.on("player_join", this.handleFirstPlayerJoin.bind(this));
+    this.api.on("chat", this.onChat.bind(this));
+    this.api.on("respawn", this.onWorldChange.bind(this));
+    this.api.on("denicker:nick_resolved", this.onNickResolved.bind(this));
+    this.api.intercept(
+      "packet:server:chat",
+      this.onServerChatPacket.bind(this)
+    );
+    this.api.intercept(
+      "packet:client:chat",
+      this.onClientChatPacket.bind(this)
+    );
 
-    this.api.commands((registry) => {
-      registry
-        .command("find")
-        .description("Finds players for your party based on criteria.")
-        .argument("<mode>", { description: "Mode (2, 3, 4) or 'stop'" })
-        .argument("[playersToFind]", {
-          description: "Number of players to find",
-          // Not rlly optional, just so ppl can /bwu find stop
-          optional: true,
-        })
-        .argument("[fkdrThreshold]", {
-          description: "Minimum FKDR required",
-          // Not rlly optional, just so ppl can /bwu find stop
-          optional: true,
-        })
-        .argument("positions", {
-          description: "Optional positions",
-          optional: true,
-          type: "greedy",
-        })
-        .handler((ctx) => this.commandHandler.handleFindCommand(ctx));
+    CommandRegistry.register(this.api, this.commandHandler);
+  }
 
-      registry
-        .command("stats")
-        .description("Shows the Bedwars statistics for a player.")
-        .argument("<nickname>", { description: "The player to check" })
-        .handler((ctx) => this.commandHandler.handleStatsCommand(ctx));
+  extractJsonFromLine(line) {
+    const clean = String(line)
+      .replaceAll(/§[0-9a-fk-or]/gi, "")
+      .trim();
+    const start = clean.indexOf("{");
+    const end = clean.lastIndexOf("}");
+    if (start === -1 || end === -1 || end <= start) return null;
+    return clean.slice(start, end + 1);
+  }
 
-      registry
-        .command("setthreshold")
-        .description("Sets the FKDR threshold for auto-requeue.")
-        .argument("<threshold>", { description: "The FKDR value (e.g., 10.0)" })
-        .handler((ctx) => this.commandHandler.handleSetThresholdCommand(ctx));
+  runLocrawSilently() {
+    const now = Date.now();
+    if (now - this._lastLocrawAt < 250) return;
+    this._lastLocrawAt = now;
+    this._suppressNextLocraw++;
+    this.api.sendChatToServer("/locraw");
+  }
 
-      registry
-        .command("clearstats")
-        .description("Clears stats of players.")
-        .handler((ctx) => this.commandHandler.handleClearCommand(ctx));
+  consumeLocraw(jsonText) {
+    try {
+      const data = JSON.parse(jsonText);
+      const isLobby =
+        (typeof data.lobbyname === "string" && data.lobbyname.length > 0) ||
+        data.server === "lobby";
 
-      registry
-        .command("setkey")
-        .description("Set your Hypixel API key")
-        .argument("<apikey>", { description: "Your Hypixel API key" })
-        .handler((ctx) => this.commandHandler.handleSetKeyCommand(ctx));
+      if (
+        !isLobby &&
+        typeof data.mode === "string" &&
+        typeof data.gametype === "string"
+      ) {
+        const gt = data.gametype.toUpperCase();
+        if (gt === "BEDWARS") {
+          this.lastGameMode = data.mode;
+          this.api.debugLog(
+            `[BWU] Last game mode updated to: ${this.lastGameMode}`
+          );
+        }
+      } else if (isLobby) {
+        setTimeout(() => this.runLocrawSilently(), 1000);
+      }
+    } catch (e) {
+      this.api.debugLog(`[BWU] Failed to parse locraw: ${e.message}`);
+    }
+  }
 
-      registry
-        .command("setpolsu")
-        .description("Set your Polsu API key")
-        .argument("<apikey>", { description: "Your Polsu API key" })
-        .handler((ctx) => this.commandHandler.handleSetPolsuCommand(ctx));
-    });
+  onServerChatPacket(event) {
+    try {
+      if (this._suppressNextLocraw > 0) {
+        let plainText = "";
+        const messageData = JSON.parse(event.data.message);
+        if (typeof messageData.text === "string") plainText += messageData.text;
+        if (Array.isArray(messageData.extra)) {
+          plainText += messageData.extra
+            .map((e) => (typeof e === "string" ? e : e?.text || ""))
+            .join("");
+        }
+
+        const plain = plainText.replaceAll(/§[0-9a-fk-or]/gi, "");
+        const json = this.extractJsonFromLine(plain);
+
+        if (json?.includes('"server"')) {
+          event.cancel();
+          this._suppressNextLocraw--;
+          this.consumeLocraw(json);
+          return;
+        }
+      }
+    } catch (e) {
+      this.api.debugLog(`[BWU] Something went wrong: ${e.message}`);
+    }
+  }
+
+  onClientChatPacket(event) {
+    try {
+      const message = event.data.message;
+
+      if (message && message.toLowerCase().startsWith("/shout ")) {
+        if (this._bypassShoutInterception) {
+          this._bypassShoutInterception = false;
+          return;
+        }
+
+        event.cancel();
+
+        const shoutMessage = message.substring(7).trim();
+
+        if (shoutMessage.length > 0) {
+          this.commandHandler.sendShoutWithCooldown(shoutMessage);
+        } else {
+          // Bruh remove this
+          this.api.chat(
+            `${this.api.getPrefix()} §cPlease provide a message to shout!`
+          );
+        }
+      }
+    } catch (e) {
+      console.error(`[BWU] Error intercepting client chat: ${e.message}`);
+      console.error(e.stack);
+    }
   }
 
   onNickResolved({ nickName, realName }) {
@@ -128,23 +208,34 @@ class BedWarsUtilities {
   async _initialApiKeyCheck() {
     setTimeout(async () => {
       const result = await this.apiService.testHypixelApiKey();
+
+      const fadeIn = 10; // 10 ticks = 0.5s
+      const stay = 40; // 40 ticks = 2.0s
+      const fadeOut = 10; // 10 ticks = 0.5s
+      const totalDurationMs = (fadeIn + stay + fadeOut) * 50;
+
       if (result.isValid) {
         this.api.sendTitle(
           "§6BW Utilities",
           "§aHypixel API key is functional!",
-          10, // Fade in (ticks)
-          40, // Stay (ticks)
-          10 // Fade out (ticks)
+          fadeIn,
+          stay,
+          fadeOut
         );
       } else {
         this.api.sendTitle(
           "§6BW Utilities",
           "§cHypixel API key is not functional! Please set a valid key",
-          10, // Fade in (ticks)
-          40, // Stay (ticks)
-          10 // Fade out (ticks)
+          fadeIn,
+          stay,
+          fadeOut
         );
       }
+
+      // Clear old title and subtitle sending empty
+      setTimeout(() => {
+        this.api.sendTitle(" ", " ", 0, 0, 0);
+      }, totalDurationMs + 50);
     }, 3000);
   }
 
@@ -152,14 +243,31 @@ class BedWarsUtilities {
     try {
       const cleanMessage = event.message.replaceAll(/§[0-9a-fk-or]/g, "");
 
+      this._handlePartyLeaveMessage(cleanMessage);
+      this._handlePartyJoinMessage(cleanMessage);
+
+      this.chatHandler.handleAutoMessage(cleanMessage);
+
       if (this.partyFinder.isActive) {
         this.partyFinder.handleChatMessage(cleanMessage);
+      }
+
+      if (
+        this.gameHandler.isBedwarsStartMessage(
+          cleanMessage,
+          this.lastCleanMessage
+        )
+      ) {
+        this.runLocrawSilently();
       }
 
       await this.gameHandler.handleGameStart(
         cleanMessage,
         this.lastCleanMessage
       );
+
+      await this.gameHandler.handleGameEnd(cleanMessage, this.lastGameMode);
+
       this.lastCleanMessage = cleanMessage;
 
       const whoMatch = cleanMessage.match(/^ONLINE: (.*)$/);
@@ -237,8 +345,10 @@ class BedWarsUtilities {
   }
 
   onWorldChange() {
+    setTimeout(() => this.runLocrawSilently(), 250);
     this.tabManager.clearManagedPlayers("all");
     this.gameHandler.resetGameState();
+    this.commandHandler.cancelPendingShout();
     this.lastCleanMessage = null;
     this.requeueTriggered = false;
     this.rankingSentThisMatch = false;
@@ -253,18 +363,53 @@ class BedWarsUtilities {
   }
 
   async processPlayerData(originalPlayerNames, resolvedPlayerNames) {
-    for (let i = 0; i < originalPlayerNames.length; i++) {
-      const originalName = originalPlayerNames[i];
-      const resolvedName = resolvedPlayerNames[i];
-      this.tabManager.addPlayerStatsToTab(originalName, resolvedName);
-    }
-
     await this.teamRanking.processAndDisplayRanking(
       originalPlayerNames,
       this.rankingSentThisMatch
     );
 
     this.rankingSentThisMatch = true;
+
+    for (let i = 0; i < originalPlayerNames.length; i++) {
+      const originalName = originalPlayerNames[i];
+      const resolvedName = resolvedPlayerNames[i];
+      await this.tabManager.addPlayerStatsToTab(originalName, resolvedName);
+    }
+  }
+
+  _handlePartyJoinMessage(cleanMessage) {
+    const trimmedMessage = cleanMessage.trim();
+
+    const joinRegex = /^You have joined (.*)'s party!$/;
+
+    const inviteRegex =
+      / invited (.*) to the party! They have 60 seconds to accept\.$/;
+
+    if (joinRegex.test(trimmedMessage) || inviteRegex.test(trimmedMessage)) {
+      this.api.debugLog(`[BWU] Party join/create detected. Sending /chat p.`);
+
+      this.api.sendChatToServer("/chat p");
+    }
+  }
+
+  _handlePartyLeaveMessage(cleanMessage) {
+    const trimmedMessage = cleanMessage.trim();
+
+    const partyLeaveTriggers = [
+      "You left the party.",
+      "The party was disbanded because all invites expired and the party was empty.",
+    ];
+
+    if (
+      partyLeaveTriggers.includes(trimmedMessage) ||
+      trimmedMessage.startsWith("You have been kicked from the party by")
+    ) {
+      this.api.debugLog(
+        `[BWU] Party leave/disband/kick detected. Running /chat a.`
+      );
+
+      this.api.sendChatToServer("/chat a");
+    }
   }
 }
 

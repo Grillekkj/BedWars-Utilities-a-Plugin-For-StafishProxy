@@ -35,12 +35,12 @@ module.exports = [
     ],
   },
   {
-    label: "API - Polsu (Ping)",
+    label: "API - Aurora (Ping)",
     description:
-      "Set your Polsu API key and cache duration. Use: /bwu setpolsu <key>",
+      "Set your Aurora API key and cache duration. Use: /bwu setaurora <key>",
     defaults: {
       main: {
-        polsuApiKey: "YOUR_POLSU_API_KEY_HERE",
+        auroraApiKey: "YOUR_AURORA_API_KEY_HERE",
       },
       performance: {
         pingCacheTTL: 60,
@@ -48,10 +48,10 @@ module.exports = [
     },
     settings: [
       {
-        key: "main.polsuApiKey",
+        key: "main.auroraApiKey",
         type: "text",
         description:
-          "Polsu API key for showing ping. Get one at polsu.xyz/api/apikey. Use: /bwu setpolsu <key>",
+          "Aurora API key for showing ping. Use: /bwu setaurora <key>",
       },
       {
         key: "performance.pingCacheTTL",
@@ -74,6 +74,7 @@ module.exports = [
       teamRanking: {
         enabled: true,
         separateMessages: false,
+        displayMode: "total",
       },
       privateRanking: {
         alwaysPrivate: false,
@@ -85,6 +86,15 @@ module.exports = [
         type: "toggle",
         text: ["OFF", "ON"],
         description: "Enable or disable automatic team ranking.",
+      },
+      {
+        key: "teamRanking.displayMode",
+        type: "cycle",
+        description: "Display total or average stats in team ranking.",
+        values: [
+          { text: "Stat Mode: Total", value: "total" },
+          { text: "Stat Mode: Average", value: "avg" },
+        ],
       },
       {
         key: "privateRanking.alwaysPrivate",
@@ -103,6 +113,37 @@ module.exports = [
         values: [
           { text: "Separate Msgs: ON", value: true },
           { text: "Separate Msgs: OFF", value: false },
+        ],
+      },
+    ],
+  },
+  {
+    label: "Auto Requeue (Game End)",
+    description: "Automatically run /requeue after a game finishes.",
+    defaults: {
+      autoRequeueGameEnd: {
+        enabled: true,
+        delay: 1000,
+      },
+    },
+    settings: [
+      {
+        type: "toggle",
+        key: "autoRequeueGameEnd.enabled",
+        text: ["OFF", "ON"],
+        description:
+          "Automatically executes /requeue when the game end message is detected.",
+      },
+      {
+        type: "cycle",
+        key: "autoRequeueGameEnd.delay",
+        description: "Delay before executing the command.",
+        values: [
+          { text: "0ms", value: 0 },
+          { text: "500ms", value: 500 },
+          { text: "1000ms", value: 1000 },
+          { text: "1500ms", value: 1500 },
+          { text: "2000ms", value: 2000 },
         ],
       },
     ],
@@ -181,6 +222,93 @@ module.exports = [
         type: "text",
         description:
           "The FKDR limit that will trigger a /requeue. Use: /bwu setthreshold <fkdr>",
+      },
+    ],
+  },
+  {
+    label: "Queue Dodge Messages",
+    description: "Sends a random message 10s before the game starts.",
+    defaults: {
+      autoQdmsg: {
+        enabled: false,
+        msg1: "",
+        msg2: "",
+        msg3: "",
+        msg4: "",
+        msg5: "",
+      },
+    },
+    settings: [
+      {
+        key: "autoQdmsg.enabled",
+        type: "toggle",
+        text: ["OFF", "ON"],
+        description: "Enable or disable automatically sending a message.",
+      },
+      {
+        key: "autoQdmsg.msg1",
+        type: "text",
+        description: "Message Slot 1. Use: /bwu setqdmsg 1 <message>",
+      },
+      {
+        key: "autoQdmsg.msg2",
+        type: "text",
+        description: "Message Slot 2. Use: /bwu setqdmsg 2 <message>",
+      },
+      {
+        key: "autoQdmsg.msg3",
+        type: "text",
+        description: "Message Slot 3. Use: /bwu setqdmsg 3 <message>",
+      },
+      {
+        key: "autoQdmsg.msg4",
+        type: "text",
+        description: "Message Slot 4. Use: /bwu setqdmsg 4 <message>",
+      },
+      {
+        key: "autoQdmsg.msg5",
+        type: "text",
+        description: "Message Slot 5. Use: /bwu setqdmsg 5 <message>",
+      },
+    ],
+  },
+  {
+    label: "Sniped Messages",
+    description: "Saves messages for the /bwu sniped command.",
+    defaults: {
+      snipedMsg: {
+        msg1: "",
+        msg2: "",
+        msg3: "",
+        msg4: "",
+        msg5: "",
+      },
+    },
+    settings: [
+      {
+        key: "snipedMsg.msg1",
+        type: "text",
+        description: "Message Slot 1. Use: /bwu setsniped 1 <message>",
+      },
+      {
+        key: "snipedMsg.msg2",
+        type: "text",
+        description: "Message Slot 2. Use: /bwu setsniped 2 <message>",
+      },
+      {
+        key: "snipedMsg.msg3",
+        type: "text",
+        description: "Message Slot 3. Use: /bwu setsniped 3 <message>",
+      },
+      {
+        key: "snipedMsg.msg4",
+        type: "text",
+        description: "Message Slot 4. Use: /bwu setsniped 4 <message>",
+      },
+      {
+        key: "snipedMsg.msg5",
+        type: "text",
+        description: "Message Slot 5. Use: /bwu setsniped 5 <message>",
       },
     ],
   },
@@ -730,7 +858,7 @@ module.exports = [
   },
   {
     label: "Stats - Ping",
-    description: "Show the player's ping (requires Polsu API).",
+    description: "Show the player's ping (requires Aurora API).",
     defaults: {
       stats: {
         showPing: {
@@ -779,6 +907,36 @@ module.exports = [
           { text: "§dLight Purple", value: "§d" },
           { text: "§eYellow", value: "§e" },
           { text: "§fWhite", value: "§f" },
+        ],
+      },
+    ],
+  },
+  {
+    label: "Stats - Rank",
+    description: "Show the player's rank (MVP+, MVP++, etc).",
+    defaults: {
+      stats: {
+        showRank: {
+          enabled: true,
+          displayMode: "chat",
+        },
+      },
+    },
+    settings: [
+      {
+        key: "stats.showRank.enabled",
+        type: "toggle",
+        text: ["OFF", "ON"],
+        description: "Show the player's rank.",
+      },
+      {
+        key: "stats.showRank.displayMode",
+        type: "cycle",
+        description: "Where to show Rank.",
+        values: [
+          { text: "Chat", value: "chat" },
+          { text: "Tab", value: "tab" },
+          { text: "Both", value: "both" },
         ],
       },
     ],

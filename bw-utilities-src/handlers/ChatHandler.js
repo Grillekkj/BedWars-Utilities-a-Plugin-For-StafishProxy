@@ -98,7 +98,47 @@ class ChatHandler {
     );
     this.api.chat(message);
   }
+
+  handleAutoMessage(cleanMessage) {
+    try {
+      if (cleanMessage.trim() !== "The game starts in 10 seconds!") {
+        return;
+      }
+
+      if (!this.api.config.get("autoQdmsg.enabled")) {
+        return;
+      }
+
+      const validMessages = [];
+      for (let i = 1; i <= 5; i++) {
+        const msg = this.api.config.get(`autoQdmsg.msg${i}`);
+        if (msg && msg.trim().length > 0) {
+          validMessages.push(msg);
+        }
+      }
+
+      if (validMessages.length === 0) {
+        return;
+      }
+
+      let possibleMessages = [...validMessages];
+
+      if (this.bwuInstance.lastQdmsg && validMessages.length > 1) {
+        possibleMessages = validMessages.filter(
+          (msg) => msg !== this.bwuInstance.lastQdmsg
+        );
+      }
+
+      const randomMsg =
+        possibleMessages[Math.floor(Math.random() * possibleMessages.length)];
+
+      this.bwuInstance.lastQdmsg = randomMsg;
+
+      this.api.sendChatToServer(`/ac ${randomMsg}`);
+    } catch (e) {
+      console.error(`[BWU] Error on handleAutoMessage: ${e.message}`);
+    }
+  }
 }
 
 module.exports = ChatHandler;
-
