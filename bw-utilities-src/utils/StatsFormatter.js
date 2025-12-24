@@ -4,6 +4,11 @@ const STAT_DEFINITIONS = [
     formatter: "_formatStars",
   },
   {
+    configKey: "showRank",
+    dataKey: "rank",
+    formatter: "_formatRank",
+  },
+  {
     configKey: "showFkdr",
     dataKey: "fkdr",
     formatter: "_formatStat",
@@ -217,6 +222,13 @@ class StatsFormatter {
     return this._getPrestigeTag(stats.stars);
   }
 
+  _formatRank({ stats }) {
+    if (!stats.rank || stats.rank === "§7") {
+      return null;
+    }
+    return stats.rank;
+  }
+
   _formatStat({ stats, ping, mode, definition, statConfig }) {
     const statKey = definition.dataKey;
     let value = null;
@@ -420,7 +432,9 @@ class StatsFormatter {
         statConfig: statConfig,
       });
 
-      parts.push(part);
+      if (part) {
+        parts.push(part);
+      }
     }
 
     return parts;

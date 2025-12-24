@@ -41,7 +41,7 @@ This version **completely replaces and improves** the old **BedWars Utilities by
 ### 🔑 Step 3: API Keys Required
 You’ll need two API keys for full functionality:
 - **Hypixel API Key:** [https://developer.hypixel.net/](https://developer.hypixel.net/)
-- **Aurora API Key:** Add bot @ here later
+- **Aurora API Key:** [Aurora Discord Bot](https://discordapp.com/oauth2/authorize?client_id=1244205279697174539)
 
 ### 🧠 Step 4: First Setup
 After installing and starting your server:

@@ -911,4 +911,34 @@ module.exports = [
       },
     ],
   },
+  {
+    label: "Stats - Rank",
+    description: "Show the player's rank (MVP+, MVP++, etc).",
+    defaults: {
+      stats: {
+        showRank: {
+          enabled: true,
+          displayMode: "chat",
+        },
+      },
+    },
+    settings: [
+      {
+        key: "stats.showRank.enabled",
+        type: "toggle",
+        text: ["OFF", "ON"],
+        description: "Show the player's rank.",
+      },
+      {
+        key: "stats.showRank.displayMode",
+        type: "cycle",
+        description: "Where to show Rank.",
+        values: [
+          { text: "Chat", value: "chat" },
+          { text: "Tab", value: "tab" },
+          { text: "Both", value: "both" },
+        ],
+      },
+    ],
+  },
 ];

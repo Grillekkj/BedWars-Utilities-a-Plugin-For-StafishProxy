@@ -57,6 +57,67 @@ class ApiService {
     }
   }
 
+  _getRankDisplay(player) {
+    const colorMap = {
+      BLACK: "§0",
+      DARK_BLUE: "§1",
+      DARK_GREEN: "§2",
+      DARK_AQUA: "§3",
+      DARK_RED: "§4",
+      DARK_PURPLE: "§5",
+      GOLD: "§6",
+      GRAY: "§7",
+      DARK_GRAY: "§8",
+      BLUE: "§9",
+      GREEN: "§a",
+      AQUA: "§b",
+      RED: "§c",
+      LIGHT_PURPLE: "§d",
+      YELLOW: "§e",
+      WHITE: "§f",
+    };
+
+    let plusColor = "§c";
+    if (player.rankPlusColor && colorMap[player.rankPlusColor]) {
+      plusColor = colorMap[player.rankPlusColor];
+    }
+
+    // Need to check this shit ai made this bitch ass code
+    if (player.rank && player.rank !== "NORMAL") {
+      const r = player.rank;
+      if (r === "YOUTUBER") return "§c[§fYOUTUBE§c]";
+      if (r === "GAME_MASTER") return "§2[GM]";
+      if (r === "ADMIN") return "§c[ADMIN]";
+      if (r === "MODERATOR") return "§2[MOD]";
+      if (r === "HELPER") return "§9[HELPER]";
+      if (r === "MAYOR") return "§d[MAYOR]";
+    }
+
+    if (player.monthlyPackageRank === "SUPERSTAR") {
+      let rankColor = "§6";
+      if (player.monthlyRankColor === "AQUA") rankColor = "§b";
+      return `${rankColor}[MVP${plusColor}++${rankColor}]`;
+    }
+
+    if (player.newPackageRank === "MVP_PLUS") {
+      return `§b[MVP${plusColor}+§b]`;
+    }
+
+    if (player.newPackageRank === "MVP") {
+      return "§b[MVP]";
+    }
+
+    if (player.newPackageRank === "VIP_PLUS") {
+      return "§a[VIP§6+§a]";
+    }
+
+    if (player.newPackageRank === "VIP") {
+      return "§a[VIP]";
+    }
+
+    return "§7";
+  }
+
   async getPlayerStats(playerName) {
     const cached = this.cache.getPlayerStats(playerName);
     if (cached) return cached;
@@ -78,6 +139,8 @@ class ApiService {
       const data = await response.json();
       if (!data.success || !data.player) return { isNicked: true };
 
+      const rankDisplay = this._getRankDisplay(data.player);
+
       const stats = data.player.stats?.Bedwars || {};
       const finalKills = stats.final_kills_bedwars || 0;
       const finalDeaths = stats.final_deaths_bedwars || 0;
@@ -85,6 +148,7 @@ class ApiService {
       const losses = stats.losses_bedwars || 0;
 
       const relevantStats = {
+        rank: rankDisplay,
         isNicked: false,
         stars: data.player.achievements?.bedwars_level || 0,
         fkdr: finalKills / Math.max(1, finalDeaths),
