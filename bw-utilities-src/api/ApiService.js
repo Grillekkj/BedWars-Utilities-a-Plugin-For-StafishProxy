@@ -112,25 +112,25 @@ class ApiService {
     if (cached !== null) return cached;
 
     try {
-      const apiKey = this.api.config.get("main.polsuApiKey");
-      if (!apiKey || apiKey === "YOUR_POLSU_API_KEY_HERE") return null;
+      const apiKey = this.api.config.get("main.auroraApiKey");
+      if (!apiKey || apiKey === "YOUR_AURORA_API_KEY_HERE") return null;
 
       const response = await fetch(
-        `https://api.polsu.xyz/polsu/ping?uuid=${uuid}`,
-        { headers: { "API-Key": apiKey } }
+        `https://bordic.xyz/api/v2/resources/ping?key=${apiKey}&uuid=${uuid}`
       );
 
       if (!response.ok) return null;
 
       const data = await response.json();
-      if (!data.success || !data.data?.stats?.avg) return null;
+      if (!data.success || !Array.isArray(data.data) || data.data.length === 0)
+        return null;
 
-      const avgPing = Math.round(data.data.stats.avg);
+      const avgPing = Math.round(data.data[0].avg);
       this.cache.setPing(uuid, avgPing);
       return avgPing;
     } catch (error) {
       console.error(
-        `[BWU POLSU API] Failed to fetch ping for ${uuid}: ${error.message}`
+        `[BWU AURORA API] Failed to fetch ping for ${uuid}: ${error.message}`
       );
       return null;
     }
@@ -138,4 +138,3 @@ class ApiService {
 }
 
 module.exports = ApiService;
-

@@ -49,10 +49,10 @@ class CommandRegistry {
         .handler((ctx) => commandHandler.handleSetKeyCommand(ctx));
 
       registry
-        .command("setpolsu")
-        .description("Set your Polsu API key")
-        .argument("<apikey>", { description: "Your Polsu API key" })
-        .handler((ctx) => commandHandler.handleSetPolsuCommand(ctx));
+        .command("setaurora")
+        .description("Set your Aurora API key")
+        .argument("<apikey>", { description: "Your Aurora API key" })
+        .handler((ctx) => commandHandler.handleSetAuroraCommand(ctx));
 
       registry
         .command("setqdmsg")
@@ -137,3 +137,4 @@ class CommandRegistry {
 }
 
 module.exports = CommandRegistry;
+

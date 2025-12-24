@@ -248,7 +248,7 @@ class CommandHandler {
     );
   }
 
-  handleSetPolsuCommand(ctx) {
+  handleSetAuroraCommand(ctx) {
     const apikey = ctx.args.apikey;
 
     if (!apikey || typeof apikey !== "string") {
@@ -266,8 +266,8 @@ class CommandHandler {
       return;
     }
 
-    this.api.config.set("main.polsuApiKey", trimmedKey);
-    this.api.chat(`${this.api.getPrefix()} §aPolsu API key set successfully!`);
+    this.api.config.set("main.auroraApiKey", trimmedKey);
+    this.api.chat(`${this.api.getPrefix()} §aAurora API key set successfully!`);
   }
 
   sendQdMessage(slot) {

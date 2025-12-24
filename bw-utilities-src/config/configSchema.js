@@ -35,12 +35,12 @@ module.exports = [
     ],
   },
   {
-    label: "API - Polsu (Ping)",
+    label: "API - Aurora (Ping)",
     description:
-      "Set your Polsu API key and cache duration. Use: /bwu setpolsu <key>",
+      "Set your Aurora API key and cache duration. Use: /bwu setaurora <key>",
     defaults: {
       main: {
-        polsuApiKey: "YOUR_POLSU_API_KEY_HERE",
+        auroraApiKey: "YOUR_AURORA_API_KEY_HERE",
       },
       performance: {
         pingCacheTTL: 60,
@@ -48,10 +48,10 @@ module.exports = [
     },
     settings: [
       {
-        key: "main.polsuApiKey",
+        key: "main.auroraApiKey",
         type: "text",
         description:
-          "Polsu API key for showing ping. Get one at polsu.xyz/api/apikey. Use: /bwu setpolsu <key>",
+          "Aurora API key for showing ping. Use: /bwu setaurora <key>",
       },
       {
         key: "performance.pingCacheTTL",
@@ -858,7 +858,7 @@ module.exports = [
   },
   {
     label: "Stats - Ping",
-    description: "Show the player's ping (requires Polsu API).",
+    description: "Show the player's ping (requires Aurora API).",
     defaults: {
       stats: {
         showPing: {
