@@ -4,9 +4,10 @@ const StatsFormatter = require("./utils/StatsFormatter");
 const ChatHandler = require("./handlers/ChatHandler");
 const CommandHandler = require("./handlers/CommandHandler");
 const GameHandler = require("./handlers/GameHandler");
-const TeamRanking = require("./services/TeamRanking");
-const TabManager = require("./services/TabManager");
-const PartyFinder = require("./services/PartyFinder");
+const TeamRanking = require("./features/TeamRanking");
+const TabManager = require("./features/TabManager");
+const PartyFinder = require("./features/PartyFinder");
+const CommandRegistry = require("./core/CommandRegistry");
 
 class BedWarsUtilities {
   constructor(api) {
@@ -82,141 +83,7 @@ class BedWarsUtilities {
       this.onServerChatPacket.bind(this)
     );
 
-    this.api.commands((registry) => {
-      registry
-        .command("find")
-        .description("Finds players for your party based on criteria.")
-        .argument("<mode>", { description: "Mode (2, 3, 4) or 'stop'" })
-        .argument("[playersToFind]", {
-          description: "Number of players to find",
-          // Not rlly optional, just so ppl can /bwu find stop
-          optional: true,
-        })
-        .argument("[fkdrThreshold]", {
-          description: "Minimum FKDR required",
-          // Not rlly optional, just so ppl can /bwu find stop
-          optional: true,
-        })
-        .argument("positions", {
-          description: "Optional positions",
-          optional: true,
-          type: "greedy",
-        })
-        .handler((ctx) => this.commandHandler.handleFindCommand(ctx));
-
-      registry
-        .command("ping")
-        .description("Shows your current ping to the server.")
-        .handler((ctx) => this.commandHandler.handlePingCommand(ctx));
-
-      registry
-        .command("stats")
-        .description("Shows the Bedwars statistics for a player.")
-        .argument("<nickname>", { description: "The player to check" })
-        .handler((ctx) => this.commandHandler.handleStatsCommand(ctx));
-
-      registry
-        .command("setthreshold")
-        .description("Sets the FKDR threshold for auto-requeue.")
-        .argument("<threshold>", { description: "The FKDR value (e.g., 10.0)" })
-        .handler((ctx) => this.commandHandler.handleSetThresholdCommand(ctx));
-
-      registry
-        .command("clearstats")
-        .description("Clears stats of players.")
-        .handler((ctx) => this.commandHandler.handleClearCommand(ctx));
-
-      registry
-        .command("setkey")
-        .description("Set your Hypixel API key")
-        .argument("<apikey>", { description: "Your Hypixel API key" })
-        .handler((ctx) => this.commandHandler.handleSetKeyCommand(ctx));
-
-      registry
-        .command("setpolsu")
-        .description("Set your Polsu API key")
-        .argument("<apikey>", { description: "Your Polsu API key" })
-        .handler((ctx) => this.commandHandler.handleSetPolsuCommand(ctx));
-
-      registry
-        .command("setqdmsg")
-        .description("Sets a queue dodge message for a slot (1-5).")
-        .argument("<slot>", { description: "Slot number (1-5)" })
-        .argument("message", {
-          description: "The message to save",
-          optional: true,
-          type: "greedy",
-        })
-        .handler((ctx) => this.commandHandler.handleSetQdmsgCommand(ctx));
-
-      registry
-        .command("listqdmsg")
-        .description("Lists all saved queue dodge messages.")
-        .handler((ctx) => this.commandHandler.handleListQdmsgCommand(ctx));
-
-      registry
-        .command("qdmsg")
-        .description("Sends a saved queue dodge message manually.")
-        .argument("<slot>", { description: "Slot number (1-5)" })
-        .handler((ctx) => this.commandHandler.handleQdmsgCommand(ctx));
-
-      registry
-        .command("setsniped")
-        .description("Sets a sniped message for a slot (1-5).")
-        .argument("<slot>", { description: "Slot number (1-5)" })
-        .argument("message", {
-          description: "The message to save",
-          optional: true,
-          type: "greedy",
-        })
-        .handler((ctx) => this.commandHandler.handleSetSnipedCommand(ctx));
-
-      registry
-        .command("listsniped")
-        .description("Lists all saved sniped messages.")
-        .handler((ctx) => this.commandHandler.handleListSnipedCommand(ctx));
-
-      registry
-        .command("sniped")
-        .description("Sends a saved sniped message.")
-        .argument("<slot>", { description: "Slot number (1-5)" })
-        .argument("[channel]", {
-          description: "Chat channel ('ac' for all chat, default is /shout)",
-          optional: true,
-        })
-        .handler((ctx) => this.commandHandler.handleSnipedCommand(ctx));
-
-      registry
-        .command("setmacro")
-        .description("Saves or updates a chat macro.")
-        .argument("<name>", { description: "The name used to call the macro." })
-        .argument("content", {
-          description: "The command or message to be saved.",
-          type: "greedy",
-        })
-        .handler((ctx) => this.commandHandler.handleSetMacroCommand(ctx));
-
-      registry
-        .command("delmacro")
-        .description("Removes a macro.")
-        .argument("<name>", {
-          description: "The name of the macro to be removed.",
-        })
-        .handler((ctx) => this.commandHandler.handleDelMacroCommand(ctx));
-
-      registry
-        .command("macros")
-        .description("Lists all saved macros.")
-        .handler((ctx) => this.commandHandler.handleListMacrosCommand(ctx));
-
-      registry
-        .command("m")
-        .description("Executes a saved macro.")
-        .argument("<name>", {
-          description: "The name of the macro to execute.",
-        })
-        .handler((ctx) => this.commandHandler.handleRunMacroCommand(ctx));
-    });
+    CommandRegistry.register(this.api, this.commandHandler);
   }
 
   extractJsonFromLine(line) {
