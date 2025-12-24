@@ -132,6 +132,12 @@ class CommandRegistry {
           description: "The name of the macro to execute.",
         })
         .handler((ctx) => commandHandler.handleRunMacroCommand(ctx));
+
+      registry
+        .command("mcnames")
+        .description("Shows the name history of a Minecraft player.")
+        .argument("<ign>", { description: "The player's username" })
+        .handler((ctx) => commandHandler.handleMcnamesCommand(ctx));
     });
   }
 }

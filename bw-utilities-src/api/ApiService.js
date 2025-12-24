@@ -135,6 +135,46 @@ class ApiService {
       return null;
     }
   }
+
+  async getNameHistory(playerName) {
+    try {
+      const response = await fetch(
+        `https://laby.net/api/v3/search/profiles/${playerName}`
+      );
+
+      if (!response.ok) return null;
+
+      const data = await response.json();
+      if (
+        !data.users ||
+        !Array.isArray(data.users) ||
+        data.users.length === 0
+      ) {
+        return null;
+      }
+
+      const user = data.users[0];
+      if (!user.history || !Array.isArray(user.history)) {
+        return null;
+      }
+
+      return {
+        currentName: user.name,
+        uuid: user.uuid,
+        history: user.history.map((entry) => ({
+          name: entry.name,
+          changedAt: entry.changed_at,
+          accurate: entry.accurate,
+          lastSeenAt: entry.last_seen_at,
+        })),
+      };
+    } catch (error) {
+      console.error(
+        `[BWU LABY API] Failed to fetch name history for ${playerName}: ${error.message}`
+      );
+      return null;
+    }
+  }
 }
 
 module.exports = ApiService;

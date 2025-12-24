@@ -2,8 +2,9 @@ const path = require("node:path");
 const fs = require("node:fs");
 
 class CommandHandler {
-  constructor(api, tabManager, chatHandler, partyFinder) {
+  constructor(api, apiService, tabManager, chatHandler, partyFinder) {
     this.api = api;
+    this.apiService = apiService;
     this.tabManager = tabManager;
     this.chatHandler = chatHandler;
     this.partyFinder = partyFinder;
@@ -515,6 +516,80 @@ class CommandHandler {
         }`
       );
       console.error(`[BWU Ping Error]: ${e.stack}`);
+    }
+  }
+
+  async handleMcnamesCommand(ctx) {
+    const playerName = ctx.args.ign;
+
+    if (!playerName || typeof playerName !== "string") {
+      this.api.chat(`${this.api.getPrefix()} §cUsage: /bwu mcnames <ign>`);
+      return;
+    }
+
+    try {
+      this.api.chat(
+        `${this.api.getPrefix()} §7Fetching name history for §b${playerName}§7...`
+      );
+
+      const nameData = await this.apiService.getNameHistory(playerName);
+
+      if (!nameData) {
+        this.api.chat(
+          `${this.api.getPrefix()} §cCouldn't find name history for §f${playerName}§c.`
+        );
+        return;
+      }
+
+      this.api.chat(
+        `${this.api.getPrefix()} §aCurrent name: §f${nameData.currentName}`
+      );
+      this.api.chat(`${this.api.getPrefix()} §7UUID: §f${nameData.uuid}`);
+
+      if (nameData.history.length > 0) {
+        this.api.chat(
+          `${this.api.getPrefix()} §6Name History §7(${
+            nameData.history.length
+          } names):`
+        );
+
+        nameData.history.forEach((entry, index) => {
+          const dateStr = entry.changedAt
+            ? new Date(entry.changedAt).toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+              })
+            : "Original";
+
+          const accurateTag = entry.accurate ? "§a✓" : "§c✗";
+          const lastSeen = entry.lastSeenAt
+            ? ` §8(Last seen: ${new Date(entry.lastSeenAt).toLocaleDateString(
+                "en-US",
+                {
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                }
+              )})`
+            : "";
+
+          this.api.chat(
+            `${this.api.getPrefix()} §7${index + 1}. §f${
+              entry.name
+            } §7- §e${dateStr} ${accurateTag}${lastSeen}`
+          );
+        });
+      } else {
+        this.api.chat(`${this.api.getPrefix()} §7No name history found.`);
+      }
+    } catch (e) {
+      this.api.chat(
+        `${this.api.getPrefix()} §cAn error occurred while fetching name history: ${
+          e.message
+        }`
+      );
+      console.error(`[BWU Mcnames Error]: ${e.stack}`);
     }
   }
 }

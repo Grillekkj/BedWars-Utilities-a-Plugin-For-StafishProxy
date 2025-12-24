@@ -33,6 +33,7 @@ class BedWarsUtilities {
     );
     this.commandHandler = new CommandHandler(
       api,
+      this.apiService,
       this.tabManager,
       this.chatHandler,
       this.partyFinder
