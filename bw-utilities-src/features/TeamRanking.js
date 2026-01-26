@@ -16,11 +16,21 @@ class TeamRanking {
     this.bwu = bwuInstance;
   }
 
-  _sendMessage(message, isPrivate) {
-    if (isPrivate) {
-      this.api.chat(message);
+  _sendMessage(message) {
+    let sendType = this.api.config.get("teamRanking.sendType") || "team";
+    // If party mode but not in party, fallback to private
+    if (sendType === "party" && this.bwu.inParty !== true) {
+      sendType = "private";
+      this.api.debugLog(`[BWU] Team Ranking sendType: party -> private (not in party)`);
     } else {
-      const cleanMessage = message.replaceAll(/§[0-9a-fk-or]/g, "");
+      this.api.debugLog(`[BWU] Team Ranking sendType: ${sendType}, inParty: ${this.bwu.inParty}`);
+    }
+    const cleanMessage = message.replaceAll(/§[0-9a-fk-or]/g, "");
+    if (sendType === "private") {
+      this.api.chat(message);
+    } else if (sendType === "party") {
+      this.api.sendChatToServer(`/pc ${cleanMessage}`);
+    } else {
       this.api.sendChatToServer(`/ac ${cleanMessage}`);
     }
   }
@@ -116,13 +126,11 @@ class TeamRanking {
   async displayRanking(teamsData, isSolosMode, rankingSent) {
     if (rankingSent) return;
 
-    const alwaysPrivate = this.api.config.get("privateRanking.alwaysPrivate");
     const useSeparateMessages = this.api.config.get(
       "teamRanking.separateMessages"
     );
     const displayMode =
       this.api.config.get("teamRanking.displayMode") || "total";
-    const sendPrivately = isSolosMode || alwaysPrivate;
 
     const sortedTeams = Object.entries(teamsData)
       .map(([letter, data]) => ({
@@ -142,30 +150,19 @@ class TeamRanking {
     }
 
     const rankingParts = sortedTeams.map((team, index) => {
-      const teamColor = sendPrivately
-        ? TEAM_MAP[team.letter]?.color || "§7"
-        : "";
-
+      const teamColor = TEAM_MAP[team.letter]?.color || "§7";
       let statsDisplay;
       const count = Math.max(1, team.playerCount);
-
       if (displayMode === "avg") {
         const avgFkdr = (team.totalFkdr / count).toFixed(1);
         const avgStars = Math.round(team.totalStars / count);
         statsDisplay = `Stars: ${avgStars} | FKDR: ${avgFkdr}`;
       } else {
-        statsDisplay = `Stars: ${
-          team.totalStars
-        } | FKDR: ${team.totalFkdr.toFixed(1)}`;
+        statsDisplay = `Stars: ${team.totalStars} | FKDR: ${team.totalFkdr.toFixed(1)}`;
       }
-
-      const teamInfo = `${index + 1}. ${teamColor}${
-        team.name
-      } §f(${statsDisplay})`;
-
+      const teamInfo = `${index + 1}. ${teamColor}${team.name} §f(${statsDisplay})`;
       if (index === 0) {
-        const targetMessage = sendPrivately ? "§c <- TARGET" : "<- TARGET";
-        return `${teamInfo} ${targetMessage}`;
+        return `${teamInfo} §c<- TARGET`;
       }
       return teamInfo;
     });
@@ -174,32 +171,29 @@ class TeamRanking {
       let index = 0;
       for (const part of rankingParts) {
         setTimeout(() => {
-          this._sendMessage(part, sendPrivately);
+          this._sendMessage(part);
         }, index * 350);
         index++;
       }
     } else {
       const targetMessage = rankingParts.shift();
-      this._sendMessage(targetMessage, sendPrivately);
-
+      this._sendMessage(targetMessage);
       if (rankingParts.length > 0) {
-        this.sendRankingMessages(rankingParts, sendPrivately);
+        this.sendRankingMessages(rankingParts);
       }
     }
   }
 
-  sendRankingMessages(rankingParts, isPrivate) {
+  sendRankingMessages(rankingParts) {
     const messagesToSend = [];
     let currentMessage = "";
     const CHAT_LIMIT = 240;
     const SEPARATOR = " §6//§f ";
-
     for (const part of rankingParts) {
       if (currentMessage === "") {
         currentMessage = part;
       } else if (
-        currentMessage.length + SEPARATOR.length + part.length >
-        CHAT_LIMIT
+        currentMessage.length + SEPARATOR.length + part.length > CHAT_LIMIT
       ) {
         messagesToSend.push(currentMessage);
         currentMessage = part;
@@ -207,15 +201,13 @@ class TeamRanking {
         currentMessage += SEPARATOR + part;
       }
     }
-
     if (currentMessage) {
       messagesToSend.push(currentMessage);
     }
-
     for (let i = 0; i < messagesToSend.length; i++) {
       const msg = messagesToSend[i];
       setTimeout(() => {
-        this._sendMessage(msg, isPrivate);
+        this._sendMessage(msg);
       }, (i + 1) * 350);
     }
   }
