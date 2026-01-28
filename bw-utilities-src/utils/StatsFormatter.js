@@ -277,12 +277,12 @@ class StatsFormatter {
       lastDigit
     );
   }
-
   _getPrestigeTag(stars) {
     const prestige = Math.floor(stars / 100);
     let symbol = "✫";
     if (stars >= 1100 && stars < 2100) symbol = "✪";
-    if (stars >= 2100) symbol = "⚝";
+    if (stars >= 2100 && stars < 3100) symbol = "⚝";
+    if (stars >= 3100) symbol = "✥";
 
     if (prestige < 10) {
       const colors = [
@@ -390,13 +390,128 @@ class StatsFormatter {
           "§6",
           "§c",
         ])}${symbol}§4]`;
+      case 31:
+        return `§9[${this._formatMythicNumber(stars, [
+          "§9",
+          "§3",
+          "§6",
+        ])}${symbol}§e]`;
+      case 32:
+        return `§c[${this._formatMythicNumber(stars, [
+          "§4",
+          "§7",
+          "§4",
+        ])}§c${symbol}]`;
+      case 33:
+        return `§9[${this._formatMythicNumber(stars, [
+          "§9",
+          "§d",
+          "§c",
+        ])}${symbol}§4]`;
+      case 34:
+        return `§2[${this._formatMythicNumber(stars, [
+          "§a",
+          "§d",
+          "§5",
+        ])}${symbol}§2]`;
+      case 35:
+        return `§c[${this._formatMythicNumber(stars, [
+          "§c",
+          "§4",
+          "§2",
+        ])}§a${symbol}]`;
+      case 36:
+        return `§a[${this._formatMythicNumber(stars, [
+          "§a",
+          "§b",
+          "§9",
+        ])}${symbol}§1]`;
+      case 37:
+        return `§4[${this._formatMythicNumber(stars, [
+          "§4",
+          "§c",
+          "§b",
+        ])}§3${symbol}]`;
+      case 38:
+        return `§1[${this._formatMythicNumber(stars, [
+          "§1",
+          "§9",
+          "§5",
+        ])}§d${symbol}§1]`;
+      case 39:
+        return `§c[${this._formatMythicNumber(stars, [
+          "§c",
+          "§a",
+          "§3",
+        ])}§9${symbol}]`;
+      case 40:
+        return `§5[${this._formatMythicNumber(stars, [
+          "§5",
+          "§c",
+          "§6",
+        ])}${symbol}§e]`;
+      case 41:
+        return `§e[${this._formatMythicNumber(stars, [
+          "§e",
+          "§6",
+          "§c",
+        ])}§d${symbol}§5]`;
+      case 42: {
+        const s = stars.toString();
+        return `§1[§9${s[0]}§3${s[1]}§b${s[2]}§f${s[3]}§7${symbol}]`;
+      }
+      case 43:
+        return `§0[${this._formatMythicNumber(stars, [
+          "§5",
+          "§8",
+          "§5",
+        ])}${symbol}§0]`;
+      case 44: {
+        const s = stars.toString();
+        return `§2[${s[0]}§a${s[1]}§e${s[2]}§6${s[3]}§5${symbol}§d]`;
+      }
+      case 45:
+        return `§f[${this._formatMythicNumber(stars, [
+          "§f",
+          "§b",
+          "§3",
+        ])}${symbol}]`;
+      case 46:
+        return `§3[${this._formatMythicNumber(stars, [
+          "§b",
+          "§e",
+          "§6",
+        ])}§d${symbol}§5]`;
+      case 47:
+        return `§f[${this._formatMythicNumber(stars, [
+          "§4",
+          "§c",
+          "§9",
+        ])}§1${symbol}§9]`;
+      case 48: {
+        const s = stars.toString();
+        return `§5[${s[0]}§c${s[1]}§6${s[2]}§e${s[3]}§b${symbol}§3]`;
+      }
+      case 49:
+        return `§2[${this._formatMythicNumber(stars, [
+          "§a",
+          "§f",
+          "§a",
+        ])}${symbol}§2]`;
+      case 50:
+        return `§4[${this._formatMythicNumber(stars, [
+          "§4",
+          "§5",
+          "§9",
+        ])}§1${symbol}§0]`;
       default:
-        if (prestige > 30)
-          return `§e[${this._formatMythicNumber(stars, [
-            "§e",
-            "§6",
-            "§c",
-          ])}${symbol}§4]`;
+        if (prestige > 50) {
+          return `§4[${this._formatMythicNumber(stars, [
+            "§4",
+            "§5",
+            "§9",
+          ])}§1${symbol}§0]`;
+        }
         return `§f[${stars}${symbol}]`;
     }
   }

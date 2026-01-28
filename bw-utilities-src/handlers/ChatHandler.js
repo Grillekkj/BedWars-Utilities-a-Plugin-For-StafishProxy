@@ -87,9 +87,7 @@ class ChatHandler {
         `${this.api.getPrefix()} §cFailed to fetch stats for ${playerName}.`
       );
       return;
-    }
-
-    let ping = null;
+    }    let ping = null;
     if (this.api.config.get("stats.showPing")) {
       const uuid = await this.apiService.getUuid(playerName);
       if (uuid) {
@@ -97,14 +95,19 @@ class ChatHandler {
       }
     }
 
+    let sendType = this.api.config.get("autoStats.sendType") || "private";
+    
+    // Include prefix for private messages, exclude for party chat
+    const includePrefix = !(sendType === "party" && this.bwuInstance.inParty === true);
+    
     const message = this.statsFormatter.formatStats(
       "chat",
       playerName,
       stats,
-      ping
+      ping,
+      { includePrefix }
     );
 
-    let sendType = this.api.config.get("autoStats.sendType") || "private";
     if (sendType === "party" && this.bwuInstance.inParty === true) {
       this.api.debugLog(`[BWU] Auto Stats sending to party chat`);
       const cleanMsg = message.replaceAll(/§[0-9a-fk-or]/g, "");

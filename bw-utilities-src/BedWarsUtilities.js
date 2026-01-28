@@ -363,14 +363,15 @@ class BedWarsUtilities {
       this.api.chat(`${this.api.getPrefix()} §cAutomatic stats mode DISABLED.`);
     }
   }
-
   async processPlayerData(originalPlayerNames, resolvedPlayerNames) {
-    await this.teamRanking.processAndDisplayRanking(
-      originalPlayerNames,
-      this.rankingSentThisMatch
-    );
-
-    this.rankingSentThisMatch = true;
+    // Only run team ranking if we're in a game (not in lobby)
+    if (this.gameHandler.gameStarted && !this.rankingSentThisMatch) {
+      await this.teamRanking.processAndDisplayRanking(
+        originalPlayerNames,
+        this.rankingSentThisMatch
+      );
+      this.rankingSentThisMatch = true;
+    }
 
     for (let i = 0; i < originalPlayerNames.length; i++) {
       const originalName = originalPlayerNames[i];

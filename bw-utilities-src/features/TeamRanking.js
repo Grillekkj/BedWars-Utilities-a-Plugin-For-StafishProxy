@@ -51,6 +51,53 @@ class TeamRanking {
     return this.getTeamLetter(myTeam?.prefix);
   }
 
+  /**
+   * Calculate a normalized threat score for a player.
+   * Uses sigmoid-based normalization to convert raw stats to 0-1 scale,
+   * then applies weightage: 70% FKDR, 10% WLR, 15% Winstreak, 5% Stars
+   * 
+   * @param {number} fkdr - Final Kills/Deaths Ratio
+   * @param {number} wlr - Win/Loss Ratio
+   * @param {number} winstreak - Current winstreak
+   * @param {number} stars - Star level (prestige)
+   * @returns {number} Normalized threat score (0-100)
+   */
+  calculateThreatScore(fkdr, wlr, winstreak, stars) {
+    // Sigmoid normalization: converts unbounded metrics to 0-1 scale
+    // Formula: 1 / (1 + e^(-k * (x - midpoint)))
+    // This creates an S-curve where midpoint maps to 0.5
+    
+    // FKDR normalization (midpoint: 3.0, steepness: 0.8)
+    // Players with 3.0 FKDR are considered "average threat"
+    // 1.0 FKDR ≈ 0.13, 3.0 FKDR ≈ 0.50, 5.0 FKDR ≈ 0.84, 10.0 FKDR ≈ 0.99
+    const normalizedFkdr = 1 / (1 + Math.exp(-0.8 * (fkdr - 3.0)));
+    
+    // WLR normalization (midpoint: 2.0, steepness: 1.0)
+    // Players with 2.0 WLR are considered "average threat"
+    // 0.5 WLR ≈ 0.18, 2.0 WLR ≈ 0.50, 4.0 WLR ≈ 0.88, 8.0 WLR ≈ 0.99
+    const normalizedWlr = 1 / (1 + Math.exp(-1.0 * (wlr - 2.0)));
+    
+    // Winstreak normalization (midpoint: 3.0, steepness: 0.5)
+    // Players with 3 winstreak are considered "average threat"
+    // 0 WS ≈ 0.18, 3 WS ≈ 0.50, 6 WS ≈ 0.78, 10 WS ≈ 0.92, 15 WS ≈ 0.98
+    const normalizedWinstreak = 1 / (1 + Math.exp(-0.5 * (winstreak - 3.0)));
+    
+    // Stars normalization (midpoint: 250, steepness: 0.01)
+    // Players with 250 stars are considered "average threat"
+    // 50✫ ≈ 0.12, 250✫ ≈ 0.50, 500✫ ≈ 0.92, 750✫ ≈ 0.99, 1000✫ ≈ 1.0
+    const normalizedStars = 1 / (1 + Math.exp(-0.01 * (stars - 250)));
+    
+    // Apply weightage: 70% FKDR, 10% WLR, 15% Winstreak, 5% Stars
+    const weightedScore = 
+      0.70 * normalizedFkdr +
+      0.10 * normalizedWlr +
+      0.15 * normalizedWinstreak +
+      0.05 * normalizedStars;
+    
+    // Convert to 0-100 scale for easier interpretation
+    return weightedScore * 100;
+  }
+
   async processAndDisplayRanking(playerNames, rankingSent) {
     if (!this.api.config.get("teamRanking.enabled")) {
       return;
@@ -94,9 +141,7 @@ class TeamRanking {
         if (!teamLetter || teamLetter === myTeamLetter) return;
 
         const realName =
-          this.bwu.resolvedNicks.get(playerName.toLowerCase()) || playerName;
-
-        const stats = await this.apiService.getPlayerStats(realName);
+          this.bwu.resolvedNicks.get(playerName.toLowerCase()) || playerName;        const stats = await this.apiService.getPlayerStats(realName);
         const fkdr =
           stats && !stats.isNicked && stats.fkdr !== undefined ? stats.fkdr : 5;
         const stars =
@@ -110,8 +155,7 @@ class TeamRanking {
             ? stats.winstreak
             : 5;
 
-        // Calculate threat score: 0.7*fkdr + 0.1*wlr + 0.15*winstreak + 0.05*stars
-        const threat = 0.7 * fkdr + 0.1 * wlr + 0.15 * winstreak + 0.05 * stars;
+        const threat = this.calculateThreatScore(fkdr, wlr, winstreak, stars);
 
         if (!teamsData[teamLetter]) {
           teamsData[teamLetter] = {
