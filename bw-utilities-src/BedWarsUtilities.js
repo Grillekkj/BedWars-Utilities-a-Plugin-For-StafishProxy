@@ -53,6 +53,7 @@ class BedWarsUtilities {
     this._lastLocrawAt = 0;
     this.lastQdmsg = null;
     this._bypassShoutInterception = false;
+    this.inParty = null; // null = unknown, true/false = known (detected from chat)
   }
 
   _getDenickerInstance() {
@@ -354,6 +355,7 @@ class BedWarsUtilities {
     this.rankingSentThisMatch = false;
     this.resolvedNicks.clear();
     this.realNameToNickMap.clear();
+    // Note: inParty is NOT reset here - party status persists across world changes
 
     if (this.autoStatsMode) {
       this.autoStatsMode = false;
@@ -380,15 +382,26 @@ class BedWarsUtilities {
   _handlePartyJoinMessage(cleanMessage) {
     const trimmedMessage = cleanMessage.trim();
 
+    // You joined someone's party
     const joinRegex = /^You have joined (.*)'s party!$/;
+    
+    // You created a party (invited someone)
+    const createRegex = /^You have invited (.*) to your party!?/;
+    
+    // Someone joined your party
+    const memberJoinRegex = /^(.*) joined the party\.$/;
 
-    const inviteRegex =
-      / invited (.*) to the party! They have 60 seconds to accept\.$/;
 
-    if (joinRegex.test(trimmedMessage) || inviteRegex.test(trimmedMessage)) {
-      this.api.debugLog(`[BWU] Party join/create detected. Sending /chat p.`);
-
-      this.api.sendChatToServer("/chat p");
+    if (
+      joinRegex.test(trimmedMessage) ||
+      createRegex.test(trimmedMessage) ||
+      memberJoinRegex.test(trimmedMessage)
+    ) {
+      if (this.inParty !== true) {
+        this.api.debugLog(`[BWU] Party join/create detected. inParty = true`);
+        this.inParty = true;
+        this.api.sendChatToServer("/chat p");
+      }
     }
   }
 
@@ -398,17 +411,19 @@ class BedWarsUtilities {
     const partyLeaveTriggers = [
       "You left the party.",
       "The party was disbanded because all invites expired and the party was empty.",
+      "The party was disbanded.",
     ];
 
     if (
       partyLeaveTriggers.includes(trimmedMessage) ||
-      trimmedMessage.startsWith("You have been kicked from the party by")
+      trimmedMessage.startsWith("You have been kicked from the party by") ||
+      trimmedMessage.startsWith("The party was disbanded because")
     ) {
-      this.api.debugLog(
-        `[BWU] Party leave/disband/kick detected. Running /chat a.`
-      );
-
-      this.api.sendChatToServer("/chat a");
+      if (this.inParty !== false) {
+        this.api.debugLog(`[BWU] Party leave/disband/kick detected. inParty = false`);
+        this.inParty = false;
+        this.api.sendChatToServer("/chat a");
+      }
     }
   }
 }

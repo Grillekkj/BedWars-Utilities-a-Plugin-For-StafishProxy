@@ -75,9 +75,7 @@ module.exports = [
         enabled: true,
         separateMessages: false,
         displayMode: "total",
-      },
-      privateRanking: {
-        alwaysPrivate: false,
+        sendType: "party",
       },
     },
     settings: [
@@ -97,22 +95,22 @@ module.exports = [
         ],
       },
       {
-        key: "privateRanking.alwaysPrivate",
-        type: "cycle",
-        description:
-          "Force the ranking message to always be sent privately to you.",
-        values: [
-          { text: "Private: ON", value: true },
-          { text: "Private: OFF", value: false },
-        ],
-      },
-      {
         key: "teamRanking.separateMessages",
         type: "cycle",
         description: "Display each team's ranking in a separate chat message.",
         values: [
           { text: "Separate Msgs: ON", value: true },
           { text: "Separate Msgs: OFF", value: false },
+        ],
+      },
+      {
+        key: "teamRanking.sendType",
+        type: "cycle",
+        description: "Choose where to send team ranking messages.",
+        values: [
+          { text: "Send in Chat: Private", value: "private" },
+          { text: "Send in Chat: Party", value: "party" },
+          { text: "Send in Chat: Team", value: "team" },
         ],
       },
     ],
@@ -222,6 +220,15 @@ module.exports = [
         type: "text",
         description:
           "The FKDR limit that will trigger a /requeue. Use: /bwu setthreshold <fkdr>",
+      },
+      {
+        key: "autoStats.sendType",
+        type: "cycle",
+        description: "Choose where to send automatic stats messages.",
+        values: [
+          { text: "Send in Chat: Party", value: "party" },
+          { text: "Send in Chat: Private", value: "private" },
+        ],
       },
     ],
   },

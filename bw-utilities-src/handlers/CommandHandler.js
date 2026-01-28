@@ -656,6 +656,58 @@ class CommandHandler {
       console.error(`[BWU Mcnames Error]: ${e.stack}`);
     }
   }
+
+  handleSetInPartyCommand(ctx) {
+    const value = ctx.args.value;
+
+    if (!value) {
+      this.api.chat(
+        `${this.api.getPrefix()} §cUsage: /bwu setinparty <true|false>`
+      );
+      return;
+    }
+
+    const valueLower = value.toLowerCase();
+
+    if (valueLower === "true") {
+      this.bwu.inParty = true;
+      this.api.chat(
+        `${this.api.getPrefix()} §a[DEBUG] inParty set to §ftrue`
+      );
+    } else if (valueLower === "false") {
+      this.bwu.inParty = false;
+      this.api.chat(
+        `${this.api.getPrefix()} §a[DEBUG] inParty set to §ffalse`
+      );
+    } else {
+      this.api.chat(
+        `${this.api.getPrefix()} §cInvalid value. Use §ftrue §cor §ffalse§c.`
+      );
+    }
+  }
+
+  async handleRerankCommand(ctx) {
+    try {
+      this.api.chat(
+        `${this.api.getPrefix()} §eRefreshing team ranking and tab list...`
+      );
+
+      // Clear existing tab stats
+      this.tabManager.clearManagedPlayers("all");
+
+      // Reset ranking sent flag to allow re-ranking
+      this.bwu.rankingSentThisMatch = false;
+
+      // Send /who command to trigger the ranking and tab refresh
+      // The existing onChat handler will process the response
+      this.api.sendChatToServer("/who");
+    } catch (error) {
+      this.api.chat(
+        `${this.api.getPrefix()} §cError during rerank: ${error.message}`
+      );
+      console.error(`[BWU] Rerank error: ${error.stack}`);
+    }
+  }
 }
 
 module.exports = CommandHandler;

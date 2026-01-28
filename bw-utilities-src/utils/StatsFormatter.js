@@ -439,9 +439,9 @@ class StatsFormatter {
 
     return parts;
   }
-
-  formatStats(mode, playerName, stats, ping) {
+  formatStats(mode, playerName, stats, ping, options = {}) {
     const isTab = mode === "tab";
+    const includePrefix = options.includePrefix !== false;
     let playerDisplay = playerName;
 
     if (!isTab) {
@@ -455,7 +455,8 @@ class StatsFormatter {
       if (isTab) {
         return " §f| §cNicked";
       } else {
-        return this.api.getPrefix() + " " + playerDisplay + " §8- §cNicked";
+        const prefix = includePrefix ? this.api.getPrefix() + " " : "";
+        return prefix + playerDisplay + " §8- §cNicked";
       }
     }
 
@@ -465,16 +466,17 @@ class StatsFormatter {
       if (isTab) {
         return "";
       } else {
-        return this.api.getPrefix() + " §cYou have all stats disabled.";
+        const prefix = includePrefix ? this.api.getPrefix() + " " : "";
+        return prefix + "§cYou have all stats disabled.";
       }
     }
 
     if (isTab) {
       return " §f| " + parts.join(" §f| ");
     } else {
+      const prefix = includePrefix ? this.api.getPrefix() + " " : "";
       return (
-        this.api.getPrefix() +
-        " " +
+        prefix +
         playerDisplay +
         " §8- §7" +
         parts.join(" §8|§7 ")

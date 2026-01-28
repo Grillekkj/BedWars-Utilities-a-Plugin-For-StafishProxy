@@ -138,6 +138,17 @@ class CommandRegistry {
         .description("Shows the name history of a Minecraft player.")
         .argument("<ign>", { description: "The player's username" })
         .handler((ctx) => commandHandler.handleMcnamesCommand(ctx));
+
+      registry
+        .command("setinparty")
+        .description("[DEBUG] Manually set the inParty status.")
+        .argument("<value>", { description: "true or false" })
+        .handler((ctx) => commandHandler.handleSetInPartyCommand(ctx));
+
+      registry
+        .command("rerank")
+        .description("Forces team ranking and refreshes tab list stats.")
+        .handler((ctx) => commandHandler.handleRerankCommand(ctx));
     });
   }
 }
