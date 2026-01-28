@@ -143,12 +143,21 @@ class CommandRegistry {
         .command("setinparty")
         .description("[DEBUG] Manually set the inParty status.")
         .argument("<value>", { description: "true or false" })
-        .handler((ctx) => commandHandler.handleSetInPartyCommand(ctx));
-
-      registry
+        .handler((ctx) => commandHandler.handleSetInPartyCommand(ctx));      registry
         .command("rerank")
         .description("Forces team ranking and refreshes tab list stats.")
-        .handler((ctx) => commandHandler.handleRerankCommand(ctx));
+        .handler((ctx) => commandHandler.handleRerankCommand(ctx));      registry
+        .command("allstats")
+        .description("Shows stats for all remaining players, or filter by team color.")
+        .argument("[color]", { 
+          description: "Optional team color (red, blue, green, yellow, aqua, white, pink, gray)", 
+          optional: true 
+        })
+        .argument("[sendTo]", { 
+          description: "Where to send (private, team, party). Default: private", 
+          optional: true 
+        })
+        .handler((ctx) => commandHandler.handleAllStatsCommand(ctx));
     });
   }
 }

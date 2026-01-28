@@ -82,8 +82,80 @@ Displays a ranking message with the strongest teams once the game begins.
 ---
 
 ### 📋 Stats on TAB
-Displays players’ stars, FKDR, beds, and winstreak directly on the TAB list.  
+Displays players' stars, FKDR, beds, and winstreak directly on the TAB list.  
 <img width="1004" height="267" alt="image" src="https://github.com/user-attachments/assets/6b3648b8-5926-457a-a729-279b2c9eda21" />
+
+## 🤝 Contributing
+
+Want to help improve BedWars Utilities? We welcome contributions!
+
+### 📝 How to Contribute
+
+1. **Fork the Repository**  
+   Click the "Fork" button at the top of this repository to create your own copy.
+
+2. **Clone Your Fork**  
+   ```bash
+   git clone https://github.com/YOUR-USERNAME/BedWars-Utilities-a-Plugin-For-StafishProxy.git
+   ```
+
+3. **Create a New Branch**  
+   Always create a new branch for your changes:
+   ```bash
+   git checkout -b feat/your-feature-name
+   # or
+   git checkout -b fix/your-bug-fix
+   ```
+
+4. **Make Your Changes**  
+   Edit the code, test your changes thoroughly, and commit them:
+   ```bash
+   git add .
+   git commit -m "Added feature XYZ"
+   ```
+
+5. **Push to Your Fork**  
+   ```bash
+   git push origin feat/your-feature-name
+   ```
+
+6. **Open a Pull Request**  
+   Go to the original repository and click "New Pull Request" to submit your changes for review.
+
+---
+
+### 💡 Development Setup Recommendation
+
+For easier development and testing, we recommend using **folder shortcuts** so you don't need to copy files back and forth:
+
+**Windows:**
+1. Clone the repository to your **Downloads** or **Desktop** folder:
+   ```
+   C:\Users\YourName\Downloads\BedWars-Utilities-a-Plugin-For-StafishProxy
+   ```
+
+2. In your Starfish `plugins` folder, create a **symbolic link** (folder shortcut) to the `bw-utilities-src` folder:
+   ```powershell
+   # Open PowerShell as Administrator
+   cd "C:\path\to\starfish\plugins"
+   New-Item -ItemType SymbolicLink -Path "bw-utilities-src" -Target "C:\Users\YourName\Downloads\BedWars-Utilities-a-Plugin-For-StafishProxy\bw-utilities-src"
+   ```
+
+3. Copy the `bw-utilities-core-x-x-x.js` file to the Starfish `plugins` folder as usual.
+
+**Benefits:**
+- ✅ Edit files directly in your cloned repository
+- ✅ Changes are instantly reflected in Starfish
+- ✅ Easy to commit and push changes via Git
+- ✅ No need to copy files between folders
+
+**macOS/Linux:**
+```bash
+cd /path/to/starfish/plugins
+ln -s ~/Downloads/BedWars-Utilities-a-Plugin-For-StafishProxy/bw-utilities-src bw-utilities-src
+```
+
+---
 
 ## 🔗 Links
 - **Starfish Proxy Repository:** [UrchinAPI/Starfish-Proxy](https://github.com/UrchinAPI/Starfish-Proxy)  

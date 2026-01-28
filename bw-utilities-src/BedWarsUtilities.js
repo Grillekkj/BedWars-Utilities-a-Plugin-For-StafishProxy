@@ -161,32 +161,63 @@ class BedWarsUtilities {
           return;
         }
       }
-    } catch (e) {
-      this.api.debugLog(`[BWU] Something went wrong: ${e.message}`);
+    } catch (e) {      this.api.debugLog(`[BWU] Something went wrong: ${e.message}`);
     }
   }
-
   onClientChatPacket(event) {
     try {
       const message = event.data.message;
 
-      if (message && message.toLowerCase().startsWith("/shout ")) {
+      // Handle both "/shout " and "/shout" (without space)
+      if (message && (message.toLowerCase().startsWith("/shout ") || message.toLowerCase() === "/shout")) {
         if (this._bypassShoutInterception) {
+          this.api.debugLog(`[BWU] Bypassing shout interception for: "${message}"`);
           this._bypassShoutInterception = false;
           return;
         }
 
+        this.api.debugLog(`[BWU] Intercepting shout command: "${message}"`);
         event.cancel();
+        this.api.debugLog(`[BWU] Event cancelled successfully`);
 
-        const shoutMessage = message.substring(7).trim();
+        // Extract message - handle both "/shout message" and "/shout"
+        const shoutMessage = message.length > 6 ? message.substring(7).trim() : "";        if (shoutMessage.length === 0) {
+          // Show cooldown status and queued message if exists
+          const now = Date.now();
+          const timeSinceLastShout = now - this.commandHandler.lastShoutTime;
+          const remainingCooldown = this.commandHandler.shoutCooldown - timeSinceLastShout;
 
-        if (shoutMessage.length > 0) {
-          this.commandHandler.sendShoutWithCooldown(shoutMessage);
+          if (this.commandHandler.pendingShoutMessage) {
+            // There's a queued message
+            const secondsLeft = Math.round(remainingCooldown / 1000);
+            this.api.chat(
+              `${this.api.getPrefix()} §eQueued message: §f"${this.commandHandler.pendingShoutMessage}"`
+            );
+            this.api.chat(
+              `${this.api.getPrefix()} §eWill send in §f${secondsLeft}s`
+            );
+          } else if (timeSinceLastShout >= this.commandHandler.shoutCooldown) {
+            this.api.chat(
+              `${this.api.getPrefix()} §aShout is ready! You can shout now.`
+            );
+          } else {
+            const secondsLeft = Math.round(remainingCooldown / 1000);
+            this.api.chat(
+              `${this.api.getPrefix()} §eShout cooldown: §f${secondsLeft}s §eremaining`
+            );
+          }
+        }else if (shoutMessage.toLowerCase() === "cancel") {
+          const wasCancelled = this.commandHandler.cancelPendingShout();
+          if (wasCancelled) {
+            this.api.chat(
+              `${this.api.getPrefix()} §aQueued shout cancelled successfully!`
+            );
+          } else {
+            // No queued shout, so actually shout "cancel" as a message
+            this.commandHandler.sendShoutWithCooldown(shoutMessage);
+          }
         } else {
-          // Bruh remove this
-          this.api.chat(
-            `${this.api.getPrefix()} §cPlease provide a message to shout!`
-          );
+          this.commandHandler.sendShoutWithCooldown(shoutMessage);
         }
       }
     } catch (e) {
