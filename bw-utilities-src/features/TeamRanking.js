@@ -123,7 +123,6 @@ class TeamRanking {
     );
     await this.displayRanking(teamsData, isSolosMode, rankingSent);
   }
-
   async collectTeamsData(playerNames, myTeamLetter) {
     const teamsData = {};
     const teamPlayerCounts = {};
@@ -138,7 +137,14 @@ class TeamRanking {
             (teamPlayerCounts[teamLetter] || 0) + 1;
         }
 
-        if (!teamLetter || teamLetter === myTeamLetter) return;
+        // Include both enemy teams and your team (if showYourTeam is enabled)
+        if (!teamLetter) return;
+        
+        // Skip your team in the normal flow (will be added separately if enabled)
+        const isMyTeam = teamLetter === myTeamLetter;
+        if (isMyTeam && !this.api.config.get("teamRanking.showYourTeam")) {
+          return;
+        }
 
         const realName =
           this.bwu.resolvedNicks.get(playerName.toLowerCase()) || playerName;        const stats = await this.apiService.getPlayerStats(realName);
@@ -165,6 +171,7 @@ class TeamRanking {
             totalWinstreak: 0,
             totalThreat: 0,
             playerCount: 0,
+            isMyTeam: isMyTeam,
           };
         }
         teamsData[teamLetter].totalFkdr += fkdr;
@@ -181,7 +188,6 @@ class TeamRanking {
 
     return { teamsData, isSolosMode };
   }
-
   async displayRanking(teamsData, isSolosMode, rankingSent) {
     if (rankingSent) return;
 
@@ -190,8 +196,11 @@ class TeamRanking {
     );
     const displayMode =
       this.api.config.get("teamRanking.displayMode") || "total";
+    const maxTeams = this.api.config.get("teamRanking.maxTeams") || 3;
+    const showYourTeam = this.api.config.get("teamRanking.showYourTeam") || false;
 
-    const sortedTeams = Object.entries(teamsData)
+    // Separate enemy teams from your team
+    const allTeams = Object.entries(teamsData)
       .map(([letter, data]) => ({
         letter,
         name: TEAM_MAP[letter]?.name || "Unknown",
@@ -201,17 +210,23 @@ class TeamRanking {
         totalWinstreak: data.totalWinstreak,
         totalThreat: data.totalThreat,
         playerCount: data.playerCount,
-      }))
-      .sort((a, b) => b.totalThreat - a.totalThreat);
+        isMyTeam: data.isMyTeam || false,
+      }));
 
-    if (sortedTeams.length === 0) {
+    const enemyTeams = allTeams.filter(team => !team.isMyTeam).sort((a, b) => b.totalThreat - a.totalThreat);
+    const myTeam = allTeams.find(team => team.isMyTeam);
+
+    if (enemyTeams.length === 0) {
       this.api.chat(
         `${this.api.getPrefix()} §cUnable to calculate ranking (no enemy team found).`
       );
       return;
     }
 
-    const rankingParts = sortedTeams.map((team, index) => {
+    // Limit enemy teams to maxTeams, but don't exceed actual number of teams
+    const teamsToShow = enemyTeams.slice(0, Math.min(maxTeams, enemyTeams.length));
+
+    const rankingParts = teamsToShow.map((team, index) => {
       const teamColor = TEAM_MAP[team.letter]?.color || "§7";
       let statsDisplay;
       const count = Math.max(1, team.playerCount);
@@ -226,6 +241,23 @@ class TeamRanking {
       const teamInfo = `${index + 1}. ${teamColor}${team.name} §f(${statsDisplay})`;
       return teamInfo;
     });
+
+    // Add your team at the end if showYourTeam is enabled
+    if (showYourTeam && myTeam) {
+      const teamColor = TEAM_MAP[myTeam.letter]?.color || "§7";
+      let statsDisplay;
+      const count = Math.max(1, myTeam.playerCount);
+      if (displayMode === "avg") {
+        const avgFkdr = (myTeam.totalFkdr / count).toFixed(2);
+        const avgStars = Math.round(myTeam.totalStars / count);
+        statsDisplay = `${avgStars}✫ | ${avgFkdr} FKDR`;
+      } else {
+        const totalStars = Math.round(myTeam.totalStars);
+        statsDisplay = `${totalStars}✫ | ${myTeam.totalFkdr.toFixed(2)} FKDR`;
+      }
+      const yourTeamInfo = `§7[YOU] ${teamColor}${myTeam.name} §f(${statsDisplay})`;
+      rankingParts.push(yourTeamInfo);
+    }
 
     if (useSeparateMessages) {
       let index = 0;

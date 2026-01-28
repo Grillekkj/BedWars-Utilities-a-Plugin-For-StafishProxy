@@ -65,8 +65,7 @@ module.exports = [
         ],
       },
     ],
-  },
-  {
+  },  {
     label: "Team Ranking",
     description:
       "Automatically ranks enemy teams by threat level (FKDR and Stars).",
@@ -76,6 +75,8 @@ module.exports = [
         separateMessages: false,
         displayMode: "total",
         sendType: "party",
+        maxTeams: 3,
+        showYourTeam: false,
       },
     },
     settings: [
@@ -111,6 +112,29 @@ module.exports = [
           { text: "Send in Chat: Private", value: "private" },
           { text: "Send in Chat: Party", value: "party" },
           { text: "Send in Chat: Team", value: "team" },
+        ],
+      },
+      {
+        key: "teamRanking.maxTeams",
+        type: "cycle",
+        description: "Maximum number of top enemy teams to display in ranking.",
+        values: [
+          { text: "Max Teams: 1", value: 1 },
+          { text: "Max Teams: 2", value: 2 },
+          { text: "Max Teams: 3", value: 3 },
+          { text: "Max Teams: 4", value: 4 },
+          { text: "Max Teams: 5", value: 5 },
+          { text: "Max Teams: 6", value: 6 },
+          { text: "Max Teams: 7", value: 7 },
+        ],
+      },
+      {
+        key: "teamRanking.showYourTeam",
+        type: "cycle",
+        description: "Show your team in the ranking for reference (doesn't count toward max teams).",
+        values: [
+          { text: "Your Team: OFF", value: false },
+          { text: "Your Team: ON", value: true },
         ],
       },
     ],
