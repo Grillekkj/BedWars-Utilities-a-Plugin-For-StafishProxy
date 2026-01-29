@@ -9,6 +9,9 @@ const TEAM_MAP = {
   S: { name: "Gray", color: "§7" },
 };
 
+// Team order for neighboring team calculation
+const TEAM_ORDER = ["R", "B", "G", "Y", "A", "W", "P", "S"];
+
 class TeamRanking {
   constructor(api, apiService, bwuInstance) {
     this.api = api;
@@ -93,8 +96,7 @@ class TeamRanking {
       0.10 * normalizedWlr +
       0.15 * normalizedWinstreak +
       0.05 * normalizedStars;
-    
-    // Convert to 0-100 scale for easier interpretation
+      // Convert to 0-100 scale for easier interpretation
     return weightedScore * 100;
   }
 
@@ -121,6 +123,11 @@ class TeamRanking {
       playerNames,
       myTeamLetter
     );
+    
+    // Display First Rushes (neighboring teams stats)
+    await this.displayFirstRushes(playerNames, teamsData);
+    
+    // Display main team ranking
     await this.displayRanking(teamsData, isSolosMode, rankingSent);
   }
   async collectTeamsData(playerNames, myTeamLetter) {
@@ -295,12 +302,121 @@ class TeamRanking {
     }
     if (currentMessage) {
       messagesToSend.push(currentMessage);
-    }
-    for (let i = 0; i < messagesToSend.length; i++) {
+    }    for (let i = 0; i < messagesToSend.length; i++) {
       const msg = messagesToSend[i];
       setTimeout(() => {
         this._sendMessage(msg);
       }, (i + 1) * 350);
+    }
+  }
+
+  /**
+   * Get the two neighboring teams based on team order
+   * Order: Red, Blue, Green, Yellow, Aqua, White, Pink, Gray
+   * Returns the teams on the left and right in the circular order
+   * @param {string} myTeamLetter - The letter of your team (R, B, G, Y, A, W, P, S)
+   * @returns {Array<string>} Array of two neighboring team letters [left, right]
+   */
+  getNeighboringTeams(myTeamLetter) {
+    const myIndex = TEAM_ORDER.indexOf(myTeamLetter);
+    if (myIndex === -1) return [];
+    
+    const teamCount = TEAM_ORDER.length;
+    const leftIndex = (myIndex - 1 + teamCount) % teamCount;
+    const rightIndex = (myIndex + 1) % teamCount;
+    
+    return [TEAM_ORDER[leftIndex], TEAM_ORDER[rightIndex]];
+  }
+
+  /**
+   * Display stats of neighboring teams at game start
+   * @param {Array<string>} playerNames - List of all player names from /who
+   * @param {Object} teamsData - Team data collected from collectTeamsData
+   */
+  async displayFirstRushes(playerNames, teamsData) {
+    if (!this.api.config.get("teamRanking.firstRushes")) {
+      return;
+    }
+    
+    const myTeamLetter = this.getMyTeamLetter();
+    if (!myTeamLetter) {
+      return;
+    }
+    
+    const neighboringTeams = this.getNeighboringTeams(myTeamLetter);
+    if (neighboringTeams.length === 0) {
+      return;
+    }
+    
+    // Group players by team
+    const playersByTeam = {};
+    for (const playerName of playerNames) {
+      const team = this.api.getPlayerTeam(playerName);
+      const teamLetter = this.getTeamLetter(team?.prefix);
+      
+      if (teamLetter && neighboringTeams.includes(teamLetter)) {
+        if (!playersByTeam[teamLetter]) {
+          playersByTeam[teamLetter] = [];
+        }
+        playersByTeam[teamLetter].push(playerName);
+      }
+    }
+    
+    // Display stats for each neighboring team
+    for (const teamLetter of neighboringTeams) {
+      const players = playersByTeam[teamLetter];
+      
+      if (!players || players.length === 0) {
+        continue;
+      }
+      
+      const teamInfo = TEAM_MAP[teamLetter];
+      const teamData = teamsData[teamLetter];
+      
+      if (!teamInfo || !teamData) {
+        continue;
+      }
+      
+      // Calculate team ranking (1-based index)
+      const allEnemyTeams = Object.entries(teamsData)
+        .filter(([letter, data]) => letter !== myTeamLetter)
+        .map(([letter, data]) => ({ letter, threat: data.totalThreat }))
+        .sort((a, b) => b.threat - a.threat);
+      
+      const ranking = allEnemyTeams.findIndex(t => t.letter === teamLetter) + 1;
+      
+      // Create header
+      const header = `${teamInfo.color}${teamInfo.name} ${ranking > 0 ? `§7(#${ranking})` : ''}§7:`;
+      this._sendMessage(header);
+      
+      // Display each player's stats
+      for (const playerName of players) {
+        const realName =
+          this.bwu.resolvedNicks.get(playerName.toLowerCase()) || playerName;
+        const stats = await this.apiService.getPlayerStats(realName);
+        
+        let ping = null;
+        if (this.api.config.get("stats.showPing.enabled")) {
+          const uuid = await this.apiService.getUuid(realName);
+          if (uuid) {
+            ping = await this.apiService.getPlayerPing(uuid);
+          }
+        }
+        
+        // Format the stats message
+        const message = this.bwu.statsFormatter.formatStats(
+          "chat",
+          playerName,
+          stats,
+          ping,
+          { includePrefix: false }
+        );
+        
+        this._sendMessage(`  ${message}`);
+        
+        // Small delay between messages
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
     }
   }
 }

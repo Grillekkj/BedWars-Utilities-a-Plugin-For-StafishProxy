@@ -77,6 +77,7 @@ module.exports = [
         sendType: "party",
         maxTeams: 3,
         showYourTeam: false,
+        firstRushes: true,
       },
     },
     settings: [
@@ -85,6 +86,12 @@ module.exports = [
         type: "toggle",
         text: ["OFF", "ON"],
         description: "Enable or disable automatic team ranking.",
+      },
+      {
+        key: "teamRanking.firstRushes",
+        type: "toggle",
+        text: ["OFF", "ON"],
+        description: "Show stats of neighboring teams at game start to help plan first rushes.",
       },
       {
         key: "teamRanking.displayMode",
