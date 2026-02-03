@@ -117,14 +117,12 @@ class TeamRanking {
         `${this.api.getPrefix()} §cUnable to detect your team. Ranking will not be calculated.`
       );
       return;
-    }
-
-    const { teamsData, isSolosMode } = await this.collectTeamsData(
+    }    const { teamsData, isSolosMode } = await this.collectTeamsData(
       playerNames,
       myTeamLetter
     );
     
-    // Display First Rushes (neighboring teams stats)
+    // Display First Rushes (neighboring teams stats) - waits until all done
     await this.displayFirstRushes(playerNames, teamsData);
     
     // Display main team ranking
@@ -332,8 +330,7 @@ class TeamRanking {
    * Display stats of neighboring teams at game start
    * @param {Array<string>} playerNames - List of all player names from /who
    * @param {Object} teamsData - Team data collected from collectTeamsData
-   */
-  async displayFirstRushes(playerNames, teamsData) {
+   */  async displayFirstRushes(playerNames, teamsData) {
     if (!this.api.config.get("teamRanking.firstRushes")) {
       return;
     }
@@ -362,7 +359,9 @@ class TeamRanking {
       }
     }
     
-    // Display stats for each neighboring team
+    const MESSAGE_DELAY = 1200;
+    
+    // Display stats for each neighboring team sequentially
     for (const teamLetter of neighboringTeams) {
       const players = playersByTeam[teamLetter];
       
@@ -385,14 +384,14 @@ class TeamRanking {
       
       const ranking = allEnemyTeams.findIndex(t => t.letter === teamLetter) + 1;
       
-      // Create header
+      // Send header
       const header = `${teamInfo.color}${teamInfo.name} ${ranking > 0 ? `§7(#${ranking})` : ''}§7:`;
       this._sendMessage(header);
+      await new Promise((resolve) => setTimeout(resolve, MESSAGE_DELAY));
       
-      // Display each player's stats
+      // Send each player's stats
       for (const playerName of players) {
-        const realName =
-          this.bwu.resolvedNicks.get(playerName.toLowerCase()) || playerName;
+        const realName = this.bwu.resolvedNicks.get(playerName.toLowerCase()) || playerName;
         const stats = await this.apiService.getPlayerStats(realName);
         
         let ping = null;
@@ -403,7 +402,6 @@ class TeamRanking {
           }
         }
         
-        // Format the stats message
         const message = this.bwu.statsFormatter.formatStats(
           "chat",
           playerName,
@@ -413,11 +411,12 @@ class TeamRanking {
         );
         
         this._sendMessage(`  ${message}`);
-        
-        // Small delay between messages
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, MESSAGE_DELAY));
       }
     }
+    
+    // One final delay before returning so main ranking doesn't conflict
+    await new Promise((resolve) => setTimeout(resolve, MESSAGE_DELAY));
   }
 }
 
