@@ -864,6 +864,105 @@ class CommandHandler {
     const match = rawPrefix.match(/[A-Z]/);
     return match ? match[0] : null;
   }
+
+  handleGameStatsCommand(ctx) {
+    this.bwu.inGameTracker.displayGameStats();
+  }
+  handlePlayerStatsCommand(ctx) {
+    const playerName = ctx.args.player;
+    if (!playerName) {
+      this.api.chat(
+        `${this.api.getPrefix()} §cUsage: /bwu playerstats <player>`
+      );
+      return;
+    }
+    this.bwu.inGameTracker.displayPlayerStats(playerName);
+  }
+
+  handleGameTabCommand(ctx) {
+    const setting = ctx.args.setting?.toLowerCase();
+    const value = ctx.args.value;
+
+    // If no args, show current settings
+    if (!setting) {
+      const showInTab = this.api.config.get("inGameTracker.showInTab");
+      const delay = this.api.config.get("inGameTracker.tabDelay");
+      const showKills = this.api.config.get("inGameTracker.tabShowKills");
+      const showDeaths = this.api.config.get("inGameTracker.tabShowDeaths");
+      const showFK = this.api.config.get("inGameTracker.tabShowFinalKills");
+      const showBB = this.api.config.get("inGameTracker.tabShowBedBreaks");
+
+      this.api.chat(`${this.api.getPrefix()} §6§l═══ Game Tab Settings ═══`);
+      this.api.chat(`  §7Show In Tab: ${showInTab ? "§aON" : "§cOFF"}`);
+      this.api.chat(`  §7Delay: §e${delay}s`);
+      this.api.chat(`  §7Show Kills: ${showKills ? "§aON" : "§cOFF"}`);
+      this.api.chat(`  §7Show Deaths: ${showDeaths ? "§aON" : "§cOFF"}`);
+      this.api.chat(`  §7Show Final Kills: ${showFK ? "§aON" : "§cOFF"}`);
+      this.api.chat(`  §7Show Bed Breaks: ${showBB ? "§aON" : "§cOFF"}`);
+      this.api.chat(`  §8Usage: /bwu gametab <on|off|kills|deaths|fk|bb|delay> [value]`);
+      return;
+    }
+
+    switch (setting) {
+      case "on":
+        this.api.config.set("inGameTracker.showInTab", true);
+        this.api.chat(`${this.api.getPrefix()} §aGame stats in tab enabled!`);
+        // Start alternation if game is in progress
+        if (this.bwu.inGameTracker.isTracking) {
+          this.bwu.tabManager.startTabAlternation();
+        }
+        break;
+
+      case "off":
+        this.api.config.set("inGameTracker.showInTab", false);
+        this.api.chat(`${this.api.getPrefix()} §cGame stats in tab disabled!`);
+        this.bwu.tabManager.stopTabAlternation();
+        break;
+
+      case "kills":
+        const newKills = !this.api.config.get("inGameTracker.tabShowKills");
+        this.api.config.set("inGameTracker.tabShowKills", newKills);
+        this.api.chat(`${this.api.getPrefix()} §7Show Kills: ${newKills ? "§aON" : "§cOFF"}`);
+        break;
+
+      case "deaths":
+        const newDeaths = !this.api.config.get("inGameTracker.tabShowDeaths");
+        this.api.config.set("inGameTracker.tabShowDeaths", newDeaths);
+        this.api.chat(`${this.api.getPrefix()} §7Show Deaths: ${newDeaths ? "§aON" : "§cOFF"}`);
+        break;
+
+      case "fk":
+        const newFK = !this.api.config.get("inGameTracker.tabShowFinalKills");
+        this.api.config.set("inGameTracker.tabShowFinalKills", newFK);
+        this.api.chat(`${this.api.getPrefix()} §7Show Final Kills: ${newFK ? "§aON" : "§cOFF"}`);
+        break;
+
+      case "bb":
+        const newBB = !this.api.config.get("inGameTracker.tabShowBedBreaks");
+        this.api.config.set("inGameTracker.tabShowBedBreaks", newBB);
+        this.api.chat(`${this.api.getPrefix()} §7Show Bed Breaks: ${newBB ? "§aON" : "§cOFF"}`);
+        break;
+
+      case "delay":
+        const delayVal = parseInt(value);
+        if (isNaN(delayVal) || delayVal < 5 || delayVal > 10) {
+          this.api.chat(`${this.api.getPrefix()} §cDelay must be between 5 and 10 seconds.`);
+          return;
+        }
+        this.api.config.set("inGameTracker.tabDelay", delayVal);
+        this.api.chat(`${this.api.getPrefix()} §7Tab delay set to §e${delayVal}s`);
+        // Restart alternation with new delay if running
+        if (this.bwu.tabManager.tabAlternationInterval) {
+          this.bwu.tabManager.stopTabAlternation();
+          this.bwu.tabManager.startTabAlternation();
+        }
+        break;
+
+      default:
+        this.api.chat(`${this.api.getPrefix()} §cUnknown setting: ${setting}`);
+        this.api.chat(`${this.api.getPrefix()} §7Usage: /bwu gametab <on|off|kills|deaths|fk|bb|delay> [value]`);
+    }
+  }
 }
 
 module.exports = CommandHandler;

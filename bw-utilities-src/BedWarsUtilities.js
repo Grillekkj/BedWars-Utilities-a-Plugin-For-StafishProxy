@@ -7,16 +7,17 @@ const GameHandler = require("./handlers/GameHandler");
 const TeamRanking = require("./features/TeamRanking");
 const TabManager = require("./features/TabManager");
 const PartyFinder = require("./features/PartyFinder");
+const InGameTracker = require("./features/InGameTracker");
 const CommandRegistry = require("./core/CommandRegistry");
 
-class BedWarsUtilities {
-  constructor(api) {
+class BedWarsUtilities {  constructor(api) {
     this.api = api;
     this.cacheManager = new CacheManager(api);
     this.apiService = new ApiService(api, this.cacheManager);
     this.statsFormatter = new StatsFormatter(api);
     this.teamRanking = new TeamRanking(api, this.apiService, this);
     this.partyFinder = new PartyFinder(api, this.apiService);
+    this.inGameTracker = new InGameTracker(api, this.apiService, this);
     this.tabManager = new TabManager(
       api,
       this.apiService,
@@ -270,7 +271,6 @@ class BedWarsUtilities {
       }, totalDurationMs + 50);
     }, 3000);
   }
-
   async onChat(event) {
     try {
       const cleanMessage = event.message.replaceAll(/§[0-9a-fk-or]/g, "");
@@ -283,6 +283,9 @@ class BedWarsUtilities {
       if (this.partyFinder.isActive) {
         this.partyFinder.handleChatMessage(cleanMessage);
       }
+
+      // Process in-game events (kills, deaths, beds)
+      this.inGameTracker.processMessage(cleanMessage);
 
       if (
         this.gameHandler.isBedwarsStartMessage(
@@ -375,12 +378,12 @@ class BedWarsUtilities {
       console.error(`[BWU CRITICAL ON_CHAT]: ${error.stack}`);
     }
   }
-
   onWorldChange() {
     setTimeout(() => this.runLocrawSilently(), 250);
     this.tabManager.clearManagedPlayers("all");
     this.gameHandler.resetGameState();
     this.commandHandler.cancelPendingShout();
+    this.inGameTracker.stopTracking();
     this.lastCleanMessage = null;
     this.requeueTriggered = false;
     this.rankingSentThisMatch = false;
@@ -393,8 +396,7 @@ class BedWarsUtilities {
       this.checkedPlayersInAutoMode.clear();
       this.api.chat(`${this.api.getPrefix()} §cAutomatic stats mode DISABLED.`);
     }
-  }
-  async processPlayerData(originalPlayerNames, resolvedPlayerNames) {
+  }async processPlayerData(originalPlayerNames, resolvedPlayerNames) {
     // Only run team ranking if we're in a game (not in lobby)
     if (this.gameHandler.gameStarted && !this.rankingSentThisMatch) {
       await this.teamRanking.processAndDisplayRanking(
@@ -402,6 +404,9 @@ class BedWarsUtilities {
         this.rankingSentThisMatch
       );
       this.rankingSentThisMatch = true;
+      
+      // Start in-game tracking when game begins
+      this.inGameTracker.startTracking(new Set(resolvedPlayerNames));
     }
 
     for (let i = 0; i < originalPlayerNames.length; i++) {

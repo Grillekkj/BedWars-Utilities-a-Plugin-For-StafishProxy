@@ -158,6 +158,28 @@ class CommandRegistry {
           optional: true 
         })
         .handler((ctx) => commandHandler.handleAllStatsCommand(ctx));
+
+      registry
+        .command("gamestats")
+        .description("Shows real-time in-game statistics for the current match.")
+        .handler((ctx) => commandHandler.handleGameStatsCommand(ctx));      registry
+        .command("playerstats")
+        .description("Shows in-game statistics for a specific player in the current match.")
+        .argument("<player>", { description: "The player's username" })
+        .handler((ctx) => commandHandler.handlePlayerStatsCommand(ctx));
+
+      registry
+        .command("gametab")
+        .description("Toggle or configure in-game stats display in tab.")
+        .argument("[setting]", { 
+          description: "Setting to toggle: on/off, kills, deaths, fk, bb, or delay <5-10>", 
+          optional: true 
+        })
+        .argument("[value]", { 
+          description: "Value for delay setting (5-10)", 
+          optional: true 
+        })
+        .handler((ctx) => commandHandler.handleGameTabCommand(ctx));
     });
   }
 }

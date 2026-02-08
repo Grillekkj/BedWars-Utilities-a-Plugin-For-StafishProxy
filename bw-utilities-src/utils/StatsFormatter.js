@@ -181,6 +181,41 @@ class StatsFormatter {
         { min: 200, color: "§4" },
       ],
     };
+
+    // Color rules for in-game real-time stats
+    this.gameStatsColorRules = {
+      // kills: 1-3 gray, 3-8 white, 8-13 green, 13-16 yellow, 16-20 gold, 20+ red
+      kills: [
+        { max: 2, color: "§7" },
+        { max: 7, color: "§f" },
+        { max: 12, color: "§a" },
+        { max: 15, color: "§e" },
+        { max: 19, color: "§6" },
+        { min: 20, color: "§c" },
+      ],
+      // deaths: reverse color scheme (more deaths = worse)
+      deaths: [
+        { max: 2, color: "§a" },
+        { max: 5, color: "§e" },
+        { max: 8, color: "§6" },
+        { max: 12, color: "§c" },
+        { min: 13, color: "§4" },
+      ],
+      // final kills: 1-2 gray, 3-4 white, 5-6 green, 7+ yellow/gold
+      finalKills: [
+        { max: 2, color: "§7" },
+        { max: 4, color: "§f" },
+        { max: 6, color: "§a" },
+        { min: 7, color: "§e" },
+      ],
+      // bed breaks: 1 gray, 2 white, 3 green, 4+ yellow
+      bedBreaks: [
+        { max: 1, color: "§7" },
+        { max: 2, color: "§f" },
+        { max: 3, color: "§a" },
+        { min: 4, color: "§e" },
+      ],
+    };
   }
 
   _applyColor(stat, value) {
@@ -195,6 +230,27 @@ class StatsFormatter {
 
     for (const element of rules) {
       const rule = element;
+      const minOk = rule.min === undefined || value >= rule.min;
+      const maxOk = rule.max === undefined || value <= rule.max;
+      if (minOk && maxOk) {
+        return rule.color;
+      }
+    }
+
+    return "§f";
+  }
+
+  _applyGameStatColor(stat, value) {
+    if (value === undefined || value === null || value === 0) {
+      return "§8"; // Dark gray for zero
+    }
+
+    const rules = this.gameStatsColorRules[stat];
+    if (!rules) {
+      return "§f";
+    }
+
+    for (const rule of rules) {
       const minOk = rule.min === undefined || value >= rule.min;
       const maxOk = rule.max === undefined || value <= rule.max;
       if (minOk && maxOk) {
@@ -597,6 +653,45 @@ class StatsFormatter {
         parts.join(" §8|§7 ")
       );
     }
+  }
+
+  /**
+   * Format in-game stats for tab display
+   * @param {Object} gameStats - { kills, deaths, finalKills, bedsBroken }
+   * @returns {string} Formatted stats string for tab suffix
+   */  formatGameStatsForTab(gameStats) {
+    if (!gameStats) {
+      return "";
+    }
+
+    const parts = [];
+    const config = this.api.config;
+
+    if (config.get("inGameTracker.tabShowKills") && gameStats.kills !== undefined) {
+      const color = this._applyGameStatColor("kills", gameStats.kills);
+      parts.push(`§7K: ${color}${gameStats.kills}`);
+    }
+
+    if (config.get("inGameTracker.tabShowDeaths") && gameStats.deaths !== undefined) {
+      // No colors for deaths - just gray
+      parts.push(`§7D: §7${gameStats.deaths}`);
+    }
+
+    if (config.get("inGameTracker.tabShowFinalKills") && gameStats.finalKills !== undefined) {
+      const color = this._applyGameStatColor("finalKills", gameStats.finalKills);
+      parts.push(`§7FK: ${color}${gameStats.finalKills}`);
+    }
+
+    if (config.get("inGameTracker.tabShowBedBreaks") && gameStats.bedsBroken !== undefined) {
+      const color = this._applyGameStatColor("bedBreaks", gameStats.bedsBroken);
+      parts.push(`§7BB: ${color}${gameStats.bedsBroken}`);
+    }
+
+    if (parts.length === 0) {
+      return "";
+    }
+
+    return " §f|  " + parts.join("  §8|  ");
   }
 }
 
