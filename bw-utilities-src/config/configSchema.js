@@ -65,8 +65,7 @@ module.exports = [
         ],
       },
     ],
-  },
-  {
+  },  {
     label: "Team Ranking",
     description:
       "Automatically ranks enemy teams by threat level (FKDR and Stars).",
@@ -75,9 +74,10 @@ module.exports = [
         enabled: true,
         separateMessages: false,
         displayMode: "total",
-      },
-      privateRanking: {
-        alwaysPrivate: false,
+        sendType: "party",
+        maxTeams: 3,
+        showYourTeam: false,
+        firstRushes: true,
       },
     },
     settings: [
@@ -86,6 +86,12 @@ module.exports = [
         type: "toggle",
         text: ["OFF", "ON"],
         description: "Enable or disable automatic team ranking.",
+      },
+      {
+        key: "teamRanking.firstRushes",
+        type: "toggle",
+        text: ["OFF", "ON"],
+        description: "Show stats of neighboring teams at game start to help plan first rushes.",
       },
       {
         key: "teamRanking.displayMode",
@@ -97,22 +103,45 @@ module.exports = [
         ],
       },
       {
-        key: "privateRanking.alwaysPrivate",
-        type: "cycle",
-        description:
-          "Force the ranking message to always be sent privately to you.",
-        values: [
-          { text: "Private: ON", value: true },
-          { text: "Private: OFF", value: false },
-        ],
-      },
-      {
         key: "teamRanking.separateMessages",
         type: "cycle",
         description: "Display each team's ranking in a separate chat message.",
         values: [
           { text: "Separate Msgs: ON", value: true },
           { text: "Separate Msgs: OFF", value: false },
+        ],
+      },
+      {
+        key: "teamRanking.sendType",
+        type: "cycle",
+        description: "Choose where to send team ranking messages.",
+        values: [
+          { text: "Send in Chat: Private", value: "private" },
+          { text: "Send in Chat: Party", value: "party" },
+          { text: "Send in Chat: Team", value: "team" },
+        ],
+      },
+      {
+        key: "teamRanking.maxTeams",
+        type: "cycle",
+        description: "Maximum number of top enemy teams to display in ranking.",
+        values: [
+          { text: "Max Teams: 1", value: 1 },
+          { text: "Max Teams: 2", value: 2 },
+          { text: "Max Teams: 3", value: 3 },
+          { text: "Max Teams: 4", value: 4 },
+          { text: "Max Teams: 5", value: 5 },
+          { text: "Max Teams: 6", value: 6 },
+          { text: "Max Teams: 7", value: 7 },
+        ],
+      },
+      {
+        key: "teamRanking.showYourTeam",
+        type: "cycle",
+        description: "Show your team in the ranking for reference (doesn't count toward max teams).",
+        values: [
+          { text: "Your Team: OFF", value: false },
+          { text: "Your Team: ON", value: true },
         ],
       },
     ],
@@ -222,6 +251,15 @@ module.exports = [
         type: "text",
         description:
           "The FKDR limit that will trigger a /requeue. Use: /bwu setthreshold <fkdr>",
+      },
+      {
+        key: "autoStats.sendType",
+        type: "cycle",
+        description: "Choose where to send automatic stats messages.",
+        values: [
+          { text: "Send in Chat: Party", value: "party" },
+          { text: "Send in Chat: Private", value: "private" },
+        ],
       },
     ],
   },
@@ -920,8 +958,7 @@ module.exports = [
           enabled: true,
           displayMode: "chat",
         },
-      },
-    },
+      },    },
     settings: [
       {
         key: "stats.showRank.enabled",
@@ -937,6 +974,158 @@ module.exports = [
           { text: "Chat", value: "chat" },
           { text: "Tab", value: "tab" },
           { text: "Both", value: "both" },
+        ],
+      },
+    ],
+  },  {
+    label: "In-Game Tracker",
+    description: "Track real-time events during BedWars matches (beds, kills, deaths, final kills).",
+    defaults: {
+      inGameTracker: {
+        enabled: true,
+        showNotifications: true,
+        notifyKills: true,
+        notifyDeaths: true,
+        notifyFinalKills: true,
+        notifyBedBreaks: true,
+        saveGameLogs: true,
+      },
+    },
+    settings: [
+      {
+        key: "inGameTracker.enabled",
+        type: "cycle",
+        description: "Enable real-time tracking of in-game events.",
+        values: [
+          { text: "Tracking: OFF", value: false },
+          { text: "Tracking: ON", value: true },
+        ],
+      },
+      {
+        key: "inGameTracker.showNotifications",
+        type: "cycle",
+        description: "Show chat notifications when tracked events occur.",
+        values: [
+          { text: "Notifications: OFF", value: false },
+          { text: "Notifications: ON", value: true },
+        ],
+      },
+      {
+        key: "inGameTracker.notifyKills",
+        type: "cycle",
+        description: "Show notification when a player gets a kill.",
+        values: [
+          { text: "Notify Kills: OFF", value: false },
+          { text: "Notify Kills: ON", value: true },
+        ],
+      },
+      {
+        key: "inGameTracker.notifyDeaths",
+        type: "cycle",
+        description: "Show notification when a player dies.",
+        values: [
+          { text: "Notify Deaths: OFF", value: false },
+          { text: "Notify Deaths: ON", value: true },
+        ],
+      },
+      {
+        key: "inGameTracker.notifyFinalKills",
+        type: "cycle",
+        description: "Show notification when a player gets a final kill.",
+        values: [
+          { text: "Notify Final Kills: OFF", value: false },
+          { text: "Notify Final Kills: ON", value: true },
+        ],
+      },
+      {
+        key: "inGameTracker.notifyBedBreaks",
+        type: "cycle",
+        description: "Show notification when a player breaks a bed.",
+        values: [
+          { text: "Notify Bed Breaks: OFF", value: false },
+          { text: "Notify Bed Breaks: ON", value: true },
+        ],
+      },
+      {
+        key: "inGameTracker.saveGameLogs",
+        type: "cycle",
+        description: "Save game messages to log files for debugging/review.",
+        values: [
+          { text: "Save Logs: OFF", value: false },
+          { text: "Save Logs: ON", value: true },
+        ],
+      },
+    ],
+  },{
+    label: "In-Game Tracker - Tab Display",
+    description: "Show real-time game stats in tab list. Alternates between regular stats and game stats.",
+    defaults: {
+      inGameTracker: {
+        showInTab: false,
+        tabDelay: 5,
+        tabShowKills: true,
+        tabShowDeaths: true,
+        tabShowFinalKills: true,
+        tabShowBedBreaks: true,
+      },
+    },
+    settings: [
+      {
+        key: "inGameTracker.showInTab",
+        type: "cycle",
+        description: "Show real-time game stats in tab. Alternates with regular stats.",
+        values: [
+          { text: "Show In Tab: OFF", value: false },
+          { text: "Show In Tab: ON", value: true },
+        ],
+      },
+      {
+        key: "inGameTracker.tabDelay",
+        type: "cycle",
+        description: "Delay between alternating regular stats and game stats in tab.",
+        values: [
+          { text: "Delay: 5 seconds", value: 5 },
+          { text: "Delay: 6 seconds", value: 6 },
+          { text: "Delay: 7 seconds", value: 7 },
+          { text: "Delay: 8 seconds", value: 8 },
+          { text: "Delay: 9 seconds", value: 9 },
+          { text: "Delay: 10 seconds", value: 10 },
+        ],
+      },
+      {
+        key: "inGameTracker.tabShowKills",
+        type: "cycle",
+        description: "Show kills in tab game stats.",
+        values: [
+          { text: "Show Kills: OFF", value: false },
+          { text: "Show Kills: ON", value: true },
+        ],
+      },
+      {
+        key: "inGameTracker.tabShowDeaths",
+        type: "cycle",
+        description: "Show deaths in tab game stats.",
+        values: [
+          { text: "Show Deaths: OFF", value: false },
+          { text: "Show Deaths: ON", value: true },
+        ],
+      },
+      {
+        key: "inGameTracker.tabShowFinalKills",
+        type: "cycle",
+        description: "Show final kills in tab game stats.",
+        values: [
+          { text: "Show Final Kills: OFF", value: false },
+          { text: "Show Final Kills: ON", value: true },
+        ],
+      },
+      {
+        key: "inGameTracker.tabShowBedBreaks",
+        type: "cycle",
+        description: "Show bed breaks in tab game stats.",
+        values: [
+          { text: "Show Bed Breaks: OFF", value: false },
+          { text: "Show Bed Breaks: ON", value: true },
         ],
       },
     ],

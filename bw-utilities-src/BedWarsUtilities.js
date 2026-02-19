@@ -7,16 +7,17 @@ const GameHandler = require("./handlers/GameHandler");
 const TeamRanking = require("./features/TeamRanking");
 const TabManager = require("./features/TabManager");
 const PartyFinder = require("./features/PartyFinder");
+const InGameTracker = require("./features/InGameTracker");
 const CommandRegistry = require("./core/CommandRegistry");
 
-class BedWarsUtilities {
-  constructor(api) {
+class BedWarsUtilities {  constructor(api) {
     this.api = api;
     this.cacheManager = new CacheManager(api);
     this.apiService = new ApiService(api, this.cacheManager);
     this.statsFormatter = new StatsFormatter(api);
     this.teamRanking = new TeamRanking(api, this.apiService, this);
     this.partyFinder = new PartyFinder(api, this.apiService);
+    this.inGameTracker = new InGameTracker(api, this.apiService, this);
     this.tabManager = new TabManager(
       api,
       this.apiService,
@@ -53,6 +54,7 @@ class BedWarsUtilities {
     this._lastLocrawAt = 0;
     this.lastQdmsg = null;
     this._bypassShoutInterception = false;
+    this.inParty = null; // null = unknown, true/false = known (detected from chat)
   }
 
   _getDenickerInstance() {
@@ -160,32 +162,63 @@ class BedWarsUtilities {
           return;
         }
       }
-    } catch (e) {
-      this.api.debugLog(`[BWU] Something went wrong: ${e.message}`);
+    } catch (e) {      this.api.debugLog(`[BWU] Something went wrong: ${e.message}`);
     }
   }
-
   onClientChatPacket(event) {
     try {
       const message = event.data.message;
 
-      if (message && message.toLowerCase().startsWith("/shout ")) {
+      // Handle both "/shout " and "/shout" (without space)
+      if (message && (message.toLowerCase().startsWith("/shout ") || message.toLowerCase() === "/shout")) {
         if (this._bypassShoutInterception) {
+          this.api.debugLog(`[BWU] Bypassing shout interception for: "${message}"`);
           this._bypassShoutInterception = false;
           return;
         }
 
+        this.api.debugLog(`[BWU] Intercepting shout command: "${message}"`);
         event.cancel();
+        this.api.debugLog(`[BWU] Event cancelled successfully`);
 
-        const shoutMessage = message.substring(7).trim();
+        // Extract message - handle both "/shout message" and "/shout"
+        const shoutMessage = message.length > 6 ? message.substring(7).trim() : "";        if (shoutMessage.length === 0) {
+          // Show cooldown status and queued message if exists
+          const now = Date.now();
+          const timeSinceLastShout = now - this.commandHandler.lastShoutTime;
+          const remainingCooldown = this.commandHandler.shoutCooldown - timeSinceLastShout;
 
-        if (shoutMessage.length > 0) {
-          this.commandHandler.sendShoutWithCooldown(shoutMessage);
+          if (this.commandHandler.pendingShoutMessage) {
+            // There's a queued message
+            const secondsLeft = Math.round(remainingCooldown / 1000);
+            this.api.chat(
+              `${this.api.getPrefix()} §eQueued message: §f"${this.commandHandler.pendingShoutMessage}"`
+            );
+            this.api.chat(
+              `${this.api.getPrefix()} §eWill send in §f${secondsLeft}s`
+            );
+          } else if (timeSinceLastShout >= this.commandHandler.shoutCooldown) {
+            this.api.chat(
+              `${this.api.getPrefix()} §aShout is ready! You can shout now.`
+            );
+          } else {
+            const secondsLeft = Math.round(remainingCooldown / 1000);
+            this.api.chat(
+              `${this.api.getPrefix()} §eShout cooldown: §f${secondsLeft}s §eremaining`
+            );
+          }
+        }else if (shoutMessage.toLowerCase() === "cancel") {
+          const wasCancelled = this.commandHandler.cancelPendingShout();
+          if (wasCancelled) {
+            this.api.chat(
+              `${this.api.getPrefix()} §aQueued shout cancelled successfully!`
+            );
+          } else {
+            // No queued shout, so actually shout "cancel" as a message
+            this.commandHandler.sendShoutWithCooldown(shoutMessage);
+          }
         } else {
-          // Bruh remove this
-          this.api.chat(
-            `${this.api.getPrefix()} §cPlease provide a message to shout!`
-          );
+          this.commandHandler.sendShoutWithCooldown(shoutMessage);
         }
       }
     } catch (e) {
@@ -238,7 +271,6 @@ class BedWarsUtilities {
       }, totalDurationMs + 50);
     }, 3000);
   }
-
   async onChat(event) {
     try {
       const cleanMessage = event.message.replaceAll(/§[0-9a-fk-or]/g, "");
@@ -251,6 +283,9 @@ class BedWarsUtilities {
       if (this.partyFinder.isActive) {
         this.partyFinder.handleChatMessage(cleanMessage);
       }
+
+      // Process in-game events (kills, deaths, beds)
+      this.inGameTracker.processMessage(cleanMessage);
 
       if (
         this.gameHandler.isBedwarsStartMessage(
@@ -343,32 +378,36 @@ class BedWarsUtilities {
       console.error(`[BWU CRITICAL ON_CHAT]: ${error.stack}`);
     }
   }
-
   onWorldChange() {
     setTimeout(() => this.runLocrawSilently(), 250);
     this.tabManager.clearManagedPlayers("all");
     this.gameHandler.resetGameState();
     this.commandHandler.cancelPendingShout();
+    this.inGameTracker.stopTracking();
     this.lastCleanMessage = null;
     this.requeueTriggered = false;
     this.rankingSentThisMatch = false;
     this.resolvedNicks.clear();
     this.realNameToNickMap.clear();
+    // Note: inParty is NOT reset here - party status persists across world changes
 
     if (this.autoStatsMode) {
       this.autoStatsMode = false;
       this.checkedPlayersInAutoMode.clear();
       this.api.chat(`${this.api.getPrefix()} §cAutomatic stats mode DISABLED.`);
     }
-  }
-
-  async processPlayerData(originalPlayerNames, resolvedPlayerNames) {
-    await this.teamRanking.processAndDisplayRanking(
-      originalPlayerNames,
-      this.rankingSentThisMatch
-    );
-
-    this.rankingSentThisMatch = true;
+  }async processPlayerData(originalPlayerNames, resolvedPlayerNames) {
+    // Only run team ranking if we're in a game (not in lobby)
+    if (this.gameHandler.gameStarted && !this.rankingSentThisMatch) {
+      await this.teamRanking.processAndDisplayRanking(
+        originalPlayerNames,
+        this.rankingSentThisMatch
+      );
+      this.rankingSentThisMatch = true;
+      
+      // Start in-game tracking when game begins
+      this.inGameTracker.startTracking(new Set(resolvedPlayerNames));
+    }
 
     for (let i = 0; i < originalPlayerNames.length; i++) {
       const originalName = originalPlayerNames[i];
@@ -380,15 +419,26 @@ class BedWarsUtilities {
   _handlePartyJoinMessage(cleanMessage) {
     const trimmedMessage = cleanMessage.trim();
 
+    // You joined someone's party
     const joinRegex = /^You have joined (.*)'s party!$/;
+    
+    // You created a party (invited someone)
+    const createRegex = /^You have invited (.*) to your party!?/;
+    
+    // Someone joined your party
+    const memberJoinRegex = /^(.*) joined the party\.$/;
 
-    const inviteRegex =
-      / invited (.*) to the party! They have 60 seconds to accept\.$/;
 
-    if (joinRegex.test(trimmedMessage) || inviteRegex.test(trimmedMessage)) {
-      this.api.debugLog(`[BWU] Party join/create detected. Sending /chat p.`);
-
-      this.api.sendChatToServer("/chat p");
+    if (
+      joinRegex.test(trimmedMessage) ||
+      createRegex.test(trimmedMessage) ||
+      memberJoinRegex.test(trimmedMessage)
+    ) {
+      if (this.inParty !== true) {
+        this.api.debugLog(`[BWU] Party join/create detected. inParty = true`);
+        this.inParty = true;
+        this.api.sendChatToServer("/chat p");
+      }
     }
   }
 
@@ -398,17 +448,19 @@ class BedWarsUtilities {
     const partyLeaveTriggers = [
       "You left the party.",
       "The party was disbanded because all invites expired and the party was empty.",
+      "The party was disbanded.",
     ];
 
     if (
       partyLeaveTriggers.includes(trimmedMessage) ||
-      trimmedMessage.startsWith("You have been kicked from the party by")
+      trimmedMessage.startsWith("You have been kicked from the party by") ||
+      trimmedMessage.startsWith("The party was disbanded because")
     ) {
-      this.api.debugLog(
-        `[BWU] Party leave/disband/kick detected. Running /chat a.`
-      );
-
-      this.api.sendChatToServer("/chat a");
+      if (this.inParty !== false) {
+        this.api.debugLog(`[BWU] Party leave/disband/kick detected. inParty = false`);
+        this.inParty = false;
+        this.api.sendChatToServer("/chat a");
+      }
     }
   }
 }

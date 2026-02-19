@@ -138,6 +138,48 @@ class CommandRegistry {
         .description("Shows the name history of a Minecraft player.")
         .argument("<ign>", { description: "The player's username" })
         .handler((ctx) => commandHandler.handleMcnamesCommand(ctx));
+
+      registry
+        .command("setinparty")
+        .description("[DEBUG] Manually set the inParty status.")
+        .argument("<value>", { description: "true or false" })
+        .handler((ctx) => commandHandler.handleSetInPartyCommand(ctx));      registry
+        .command("rerank")
+        .description("Forces team ranking and refreshes tab list stats.")
+        .handler((ctx) => commandHandler.handleRerankCommand(ctx));      registry
+        .command("allstats")
+        .description("Shows stats for all remaining players, or filter by team color.")
+        .argument("[color]", { 
+          description: "Optional team color (red, blue, green, yellow, aqua, white, pink, gray)", 
+          optional: true 
+        })
+        .argument("[sendTo]", { 
+          description: "Where to send (private, team, party). Default: private", 
+          optional: true 
+        })
+        .handler((ctx) => commandHandler.handleAllStatsCommand(ctx));
+
+      registry
+        .command("gamestats")
+        .description("Shows real-time in-game statistics for the current match.")
+        .handler((ctx) => commandHandler.handleGameStatsCommand(ctx));      registry
+        .command("playerstats")
+        .description("Shows in-game statistics for a specific player in the current match.")
+        .argument("<player>", { description: "The player's username" })
+        .handler((ctx) => commandHandler.handlePlayerStatsCommand(ctx));
+
+      registry
+        .command("gametab")
+        .description("Toggle or configure in-game stats display in tab.")
+        .argument("[setting]", { 
+          description: "Setting to toggle: on/off, kills, deaths, fk, bb, or delay <5-10>", 
+          optional: true 
+        })
+        .argument("[value]", { 
+          description: "Value for delay setting (5-10)", 
+          optional: true 
+        })
+        .handler((ctx) => commandHandler.handleGameTabCommand(ctx));
     });
   }
 }

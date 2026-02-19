@@ -19,13 +19,21 @@ class ChatHandler {
 
     // Auto Stats Mode
     if (this.api.config.get("autoStats.enabled") && !autoStatsMode) {
-      const joinRegex = new RegExp(`^${myNick} has joined \\(\\d+\\/\\d+\\)!$`);
+      const joinRegex = new RegExp(`^${myNick} has joined \\([0-9]+\\/[0-9]+\\)!$`);
       if (joinRegex.test(cleanMessage)) {
         setAutoStatsMode(true);
         checkedPlayers.clear();
-        this.api.chat(
-          `${this.api.getPrefix()} §aAutomatic stats mode (private to you) ENABLED.`
-        );
+        let sendType = this.api.config.get("autoStats.sendType") || "private";
+        // If party mode but not in party, fallback to private
+        if (sendType === "party" && this.bwuInstance.inParty !== true) {
+          sendType = "private";
+          this.api.debugLog(`[BWU] Auto Stats sendType: party -> private (not in party)`);
+        } else {
+          this.api.debugLog(`[BWU] Auto Stats sendType: ${sendType}`);
+        }
+        let modeText = sendType === "party" ? "Party Mode" : "Private Mode";
+        const enabledMsg = `${this.api.getPrefix()} §aAutomatic stats mode ENABLED (§b${modeText}§a)`;
+        this.api.chat(enabledMsg);
         return;
       }
     }
@@ -36,7 +44,6 @@ class ChatHandler {
 
     const senderName = match[1];
     const messageContent = match[2];
-    if (senderName.toLowerCase() === myNick.toLowerCase()) return;
 
     if (autoStatsMode && !checkedPlayers.has(senderName.toLowerCase())) {
       await this.displayStatsForPlayer(senderName);
@@ -80,9 +87,7 @@ class ChatHandler {
         `${this.api.getPrefix()} §cFailed to fetch stats for ${playerName}.`
       );
       return;
-    }
-
-    let ping = null;
+    }    let ping = null;
     if (this.api.config.get("stats.showPing")) {
       const uuid = await this.apiService.getUuid(playerName);
       if (uuid) {
@@ -90,13 +95,29 @@ class ChatHandler {
       }
     }
 
+    let sendType = this.api.config.get("autoStats.sendType") || "private";
+    
+    // Include prefix for private messages, exclude for party chat
+    const includePrefix = !(sendType === "party" && this.bwuInstance.inParty === true);
+    
     const message = this.statsFormatter.formatStats(
       "chat",
       playerName,
       stats,
-      ping
+      ping,
+      { includePrefix }
     );
-    this.api.chat(message);
+
+    if (sendType === "party" && this.bwuInstance.inParty === true) {
+      this.api.debugLog(`[BWU] Auto Stats sending to party chat`);
+      const cleanMsg = message.replaceAll(/§[0-9a-fk-or]/g, "");
+      this.api.sendChatToServer(`/pc ${cleanMsg}`);
+    } else if (sendType === "party") {
+      this.api.debugLog(`[BWU] Auto Stats sendType: party -> private (not in party)`);
+      this.api.chat(message);
+    } else {
+      this.api.chat(message);
+    }
   }
 
   handleAutoMessage(cleanMessage) {

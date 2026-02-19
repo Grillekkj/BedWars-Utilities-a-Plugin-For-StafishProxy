@@ -414,14 +414,13 @@ class CommandHandler {
     } else {
       this.api.sendChatToServer(`${commandPrefix} ${message}`);
     }
-  }
-
-  sendShoutWithCooldown(message) {
+  }  sendShoutWithCooldown(message) {
     const now = Date.now();
     const timeSinceLastShout = now - this.lastShoutTime;
     const remainingCooldown = this.shoutCooldown - timeSinceLastShout;
 
     if (timeSinceLastShout >= this.shoutCooldown) {
+      // Cooldown is over, send immediately
       this.bwu._bypassShoutInterception = true;
       this.api.sendChatToServer(`/shout ${message}`);
       this.lastShoutTime = now;
@@ -432,35 +431,42 @@ class CommandHandler {
         this.shoutTimer = null;
       }
     } else {
+      // Cooldown active, queue the message
       this.pendingShoutMessage = message;
 
       if (this.shoutTimer) {
         clearTimeout(this.shoutTimer);
-      }
-
+      }      // Use arrow function to preserve 'this' context
+      this.api.debugLog(`[BWU] Queuing shout: "${message}", will send in ${remainingCooldown}ms`);
       this.shoutTimer = setTimeout(() => {
+        this.api.debugLog(`[BWU] Shout timer fired! Pending message: "${this.pendingShoutMessage}"`);
         if (this.pendingShoutMessage) {
           this.bwu._bypassShoutInterception = true;
           this.api.sendChatToServer(`/shout ${this.pendingShoutMessage}`);
+          this.api.debugLog(`[BWU] Queued shout sent: "${this.pendingShoutMessage}"`);
           this.lastShoutTime = Date.now();
           this.pendingShoutMessage = null;
           this.shoutTimer = null;
         }
       }, remainingCooldown);
 
-      const secondsLeft = Math.ceil(remainingCooldown / 1000);
+      const secondsLeft = Math.round(remainingCooldown / 1000);
       this.api.chat(
-        `${this.api.getPrefix()} §eShout queued! Will send in §f${secondsLeft}s §e(cooldown active)`
+        `${this.api.getPrefix()} §eQueued message: §f"${message}"`
+      );
+      this.api.chat(
+        `${this.api.getPrefix()} §eWill send in §f${secondsLeft}s §e(cooldown active)`
       );
     }
   }
-
   cancelPendingShout() {
     if (this.shoutTimer) {
       clearTimeout(this.shoutTimer);
       this.shoutTimer = null;
       this.pendingShoutMessage = null;
+      return true;
     }
+    return false;
   }
 
   handleSnipedCommand(ctx) {
@@ -654,6 +660,307 @@ class CommandHandler {
         }`
       );
       console.error(`[BWU Mcnames Error]: ${e.stack}`);
+    }
+  }
+
+  handleSetInPartyCommand(ctx) {
+    const value = ctx.args.value;
+
+    if (!value) {
+      this.api.chat(
+        `${this.api.getPrefix()} §cUsage: /bwu setinparty <true|false>`
+      );
+      return;
+    }
+
+    const valueLower = value.toLowerCase();
+
+    if (valueLower === "true") {
+      this.bwu.inParty = true;
+      this.api.chat(
+        `${this.api.getPrefix()} §a[DEBUG] inParty set to §ftrue`
+      );
+    } else if (valueLower === "false") {
+      this.bwu.inParty = false;
+      this.api.chat(
+        `${this.api.getPrefix()} §a[DEBUG] inParty set to §ffalse`
+      );
+    } else {
+      this.api.chat(
+        `${this.api.getPrefix()} §cInvalid value. Use §ftrue §cor §ffalse§c.`
+      );
+    }
+  }
+  async handleRerankCommand(ctx) {
+    try {
+      this.api.chat(
+        `${this.api.getPrefix()} §eRefreshing team ranking and tab list...`
+      );
+
+      // Clear existing tab stats
+      this.tabManager.clearManagedPlayers("all");
+
+      // Reset ranking sent flag to allow re-ranking
+      this.bwu.rankingSentThisMatch = false;
+
+      // Send /who command to trigger the ranking and tab refresh
+      // The existing onChat handler will process the response
+      this.api.sendChatToServer("/who");
+    } catch (error) {
+      this.api.chat(
+        `${this.api.getPrefix()} §cError during rerank: ${error.message}`
+      );
+      console.error(`[BWU] Rerank error: ${error.stack}`);
+    }
+  }  async handleAllStatsCommand(ctx) {
+    try {
+      const colorFilter = ctx.args.color?.toLowerCase();
+      const sendTo = ctx.args.sendTo?.toLowerCase() || "private";
+
+      // Validate sendTo argument
+      if (!["private", "team", "party"].includes(sendTo)) {
+        this.api.chat(
+          `${this.api.getPrefix()} §cInvalid sendTo option! Use: private, team, or party`
+        );
+        return;
+      }
+
+      // Check if we're in a party when sendTo is party
+      if (sendTo === "party" && this.bwu.inParty !== true) {
+        this.api.chat(
+          `${this.api.getPrefix()} §cYou must be in a party to send to party chat!`
+        );
+        return;
+      }
+
+      // Map color names to team letter codes
+      const colorMap = {
+        red: "R",
+        blue: "B",
+        green: "G",
+        yellow: "Y",
+        aqua: "A",
+        white: "W",
+        pink: "P",
+        gray: "S",
+        grey: "S", // Alternative spelling
+      };
+
+      const teamNames = {
+        R: "Red",
+        B: "Blue",
+        G: "Green",
+        Y: "Yellow",
+        A: "Aqua",
+        W: "White",
+        P: "Pink",
+        S: "Gray",
+      };
+
+      // Get all players from TabManager (these are the players from last /who)
+      const managedPlayers = Array.from(this.tabManager.managedPlayers.keys());
+      
+      if (managedPlayers.length === 0) {
+        this.api.chat(
+          `${this.api.getPrefix()} §cNo players tracked. Try running §f/who §cor wait for a game to start!`
+        );
+        return;
+      }
+
+      let playersToShow = [];
+
+      // If color filter is specified, validate and filter
+      if (colorFilter) {
+        const teamLetter = colorMap[colorFilter];
+        
+        if (!teamLetter) {
+          this.api.chat(
+            `${this.api.getPrefix()} §cInvalid color! Valid colors: red, blue, green, yellow, aqua, white, pink, gray`
+          );
+          return;
+        }
+
+        // Filter players by team color
+        for (const playerName of managedPlayers) {
+          const team = this.api.getPlayerTeam(playerName);
+          const playerTeamLetter = this._getTeamLetter(team?.prefix);
+          
+          if (playerTeamLetter === teamLetter) {
+            playersToShow.push(playerName);
+          }
+        }
+
+        if (playersToShow.length === 0) {
+          this.api.chat(
+            `${this.api.getPrefix()} §cNo players found on ${teamNames[teamLetter]} team!`
+          );
+          return;
+        }
+
+        const modeText = sendTo === "private" ? "privately" : sendTo === "team" ? "in team chat" : "in party chat";
+        this.api.chat(
+          `${this.api.getPrefix()} §eShowing stats for §f${playersToShow.length} §eplayers on §f${teamNames[teamLetter]} §eteam ${modeText}...`
+        );
+      } else {
+        // Show all players
+        playersToShow = managedPlayers;
+        const modeText = sendTo === "private" ? "privately" : sendTo === "team" ? "in team chat" : "in party chat";
+        this.api.chat(
+          `${this.api.getPrefix()} §eShowing stats for §f${playersToShow.length} §eplayers ${modeText}...`
+        );
+      }
+
+      // Display stats for each player
+      for (const playerName of playersToShow) {
+        // Get real name if nicked
+        const realName =
+          this.bwu.resolvedNicks.get(playerName.toLowerCase()) || playerName;
+
+        // Fetch stats
+        const stats = await this.apiService.getPlayerStats(realName);
+        
+        let ping = null;
+        if (this.api.config.get("stats.showPing.enabled")) {
+          const uuid = await this.apiService.getUuid(realName);
+          if (uuid) {
+            ping = await this.apiService.getPlayerPing(uuid);
+          }
+        }
+
+        // Format stats message
+        const message = this.bwu.statsFormatter.formatStats(
+          "chat",
+          playerName,
+          stats,
+          ping,
+          { includePrefix: false }
+        );
+
+        // Send to appropriate channel
+        if (sendTo === "private") {
+          this.api.chat(message);
+        } else {
+          const cleanMessage = message.replaceAll(/§[0-9a-fk-or]/g, "");
+          if (sendTo === "team") {
+            this.api.sendChatToServer(`/ac ${cleanMessage}`);
+          } else if (sendTo === "party") {
+            this.api.sendChatToServer(`/pc ${cleanMessage}`);
+          }
+        }
+
+        // Small delay to avoid spam
+        await new Promise((resolve) => setTimeout(resolve, 150));
+      }
+    } catch (error) {
+      this.api.chat(
+        `${this.api.getPrefix()} §cError showing stats: ${error.message}`
+      );
+      console.error(`[BWU] AllStats error: ${error.stack}`);
+    }
+  }
+
+  _getTeamLetter(rawPrefix) {
+    if (!rawPrefix) return null;
+    const match = rawPrefix.match(/[A-Z]/);
+    return match ? match[0] : null;
+  }
+
+  handleGameStatsCommand(ctx) {
+    this.bwu.inGameTracker.displayGameStats();
+  }
+  handlePlayerStatsCommand(ctx) {
+    const playerName = ctx.args.player;
+    if (!playerName) {
+      this.api.chat(
+        `${this.api.getPrefix()} §cUsage: /bwu playerstats <player>`
+      );
+      return;
+    }
+    this.bwu.inGameTracker.displayPlayerStats(playerName);
+  }
+
+  handleGameTabCommand(ctx) {
+    const setting = ctx.args.setting?.toLowerCase();
+    const value = ctx.args.value;
+
+    // If no args, show current settings
+    if (!setting) {
+      const showInTab = this.api.config.get("inGameTracker.showInTab");
+      const delay = this.api.config.get("inGameTracker.tabDelay");
+      const showKills = this.api.config.get("inGameTracker.tabShowKills");
+      const showDeaths = this.api.config.get("inGameTracker.tabShowDeaths");
+      const showFK = this.api.config.get("inGameTracker.tabShowFinalKills");
+      const showBB = this.api.config.get("inGameTracker.tabShowBedBreaks");
+
+      this.api.chat(`${this.api.getPrefix()} §6§l═══ Game Tab Settings ═══`);
+      this.api.chat(`  §7Show In Tab: ${showInTab ? "§aON" : "§cOFF"}`);
+      this.api.chat(`  §7Delay: §e${delay}s`);
+      this.api.chat(`  §7Show Kills: ${showKills ? "§aON" : "§cOFF"}`);
+      this.api.chat(`  §7Show Deaths: ${showDeaths ? "§aON" : "§cOFF"}`);
+      this.api.chat(`  §7Show Final Kills: ${showFK ? "§aON" : "§cOFF"}`);
+      this.api.chat(`  §7Show Bed Breaks: ${showBB ? "§aON" : "§cOFF"}`);
+      this.api.chat(`  §8Usage: /bwu gametab <on|off|kills|deaths|fk|bb|delay> [value]`);
+      return;
+    }
+
+    switch (setting) {
+      case "on":
+        this.api.config.set("inGameTracker.showInTab", true);
+        this.api.chat(`${this.api.getPrefix()} §aGame stats in tab enabled!`);
+        // Start alternation if game is in progress
+        if (this.bwu.inGameTracker.isTracking) {
+          this.bwu.tabManager.startTabAlternation();
+        }
+        break;
+
+      case "off":
+        this.api.config.set("inGameTracker.showInTab", false);
+        this.api.chat(`${this.api.getPrefix()} §cGame stats in tab disabled!`);
+        this.bwu.tabManager.stopTabAlternation();
+        break;
+
+      case "kills":
+        const newKills = !this.api.config.get("inGameTracker.tabShowKills");
+        this.api.config.set("inGameTracker.tabShowKills", newKills);
+        this.api.chat(`${this.api.getPrefix()} §7Show Kills: ${newKills ? "§aON" : "§cOFF"}`);
+        break;
+
+      case "deaths":
+        const newDeaths = !this.api.config.get("inGameTracker.tabShowDeaths");
+        this.api.config.set("inGameTracker.tabShowDeaths", newDeaths);
+        this.api.chat(`${this.api.getPrefix()} §7Show Deaths: ${newDeaths ? "§aON" : "§cOFF"}`);
+        break;
+
+      case "fk":
+        const newFK = !this.api.config.get("inGameTracker.tabShowFinalKills");
+        this.api.config.set("inGameTracker.tabShowFinalKills", newFK);
+        this.api.chat(`${this.api.getPrefix()} §7Show Final Kills: ${newFK ? "§aON" : "§cOFF"}`);
+        break;
+
+      case "bb":
+        const newBB = !this.api.config.get("inGameTracker.tabShowBedBreaks");
+        this.api.config.set("inGameTracker.tabShowBedBreaks", newBB);
+        this.api.chat(`${this.api.getPrefix()} §7Show Bed Breaks: ${newBB ? "§aON" : "§cOFF"}`);
+        break;
+
+      case "delay":
+        const delayVal = parseInt(value);
+        if (isNaN(delayVal) || delayVal < 5 || delayVal > 10) {
+          this.api.chat(`${this.api.getPrefix()} §cDelay must be between 5 and 10 seconds.`);
+          return;
+        }
+        this.api.config.set("inGameTracker.tabDelay", delayVal);
+        this.api.chat(`${this.api.getPrefix()} §7Tab delay set to §e${delayVal}s`);
+        // Restart alternation with new delay if running
+        if (this.bwu.tabManager.tabAlternationInterval) {
+          this.bwu.tabManager.stopTabAlternation();
+          this.bwu.tabManager.startTabAlternation();
+        }
+        break;
+
+      default:
+        this.api.chat(`${this.api.getPrefix()} §cUnknown setting: ${setting}`);
+        this.api.chat(`${this.api.getPrefix()} §7Usage: /bwu gametab <on|off|kills|deaths|fk|bb|delay> [value]`);
     }
   }
 }

@@ -181,6 +181,41 @@ class StatsFormatter {
         { min: 200, color: "§4" },
       ],
     };
+
+    // Color rules for in-game real-time stats
+    this.gameStatsColorRules = {
+      // kills: 1-3 gray, 3-8 white, 8-13 green, 13-16 yellow, 16-20 gold, 20+ red
+      kills: [
+        { max: 2, color: "§7" },
+        { max: 7, color: "§f" },
+        { max: 12, color: "§a" },
+        { max: 15, color: "§e" },
+        { max: 19, color: "§6" },
+        { min: 20, color: "§c" },
+      ],
+      // deaths: reverse color scheme (more deaths = worse)
+      deaths: [
+        { max: 2, color: "§a" },
+        { max: 5, color: "§e" },
+        { max: 8, color: "§6" },
+        { max: 12, color: "§c" },
+        { min: 13, color: "§4" },
+      ],
+      // final kills: 1-2 gray, 3-4 white, 5-6 green, 7+ yellow/gold
+      finalKills: [
+        { max: 2, color: "§7" },
+        { max: 4, color: "§f" },
+        { max: 6, color: "§a" },
+        { min: 7, color: "§e" },
+      ],
+      // bed breaks: 1 gray, 2 white, 3 green, 4+ yellow
+      bedBreaks: [
+        { max: 1, color: "§7" },
+        { max: 2, color: "§f" },
+        { max: 3, color: "§a" },
+        { min: 4, color: "§e" },
+      ],
+    };
   }
 
   _applyColor(stat, value) {
@@ -195,6 +230,27 @@ class StatsFormatter {
 
     for (const element of rules) {
       const rule = element;
+      const minOk = rule.min === undefined || value >= rule.min;
+      const maxOk = rule.max === undefined || value <= rule.max;
+      if (minOk && maxOk) {
+        return rule.color;
+      }
+    }
+
+    return "§f";
+  }
+
+  _applyGameStatColor(stat, value) {
+    if (value === undefined || value === null || value === 0) {
+      return "§8"; // Dark gray for zero
+    }
+
+    const rules = this.gameStatsColorRules[stat];
+    if (!rules) {
+      return "§f";
+    }
+
+    for (const rule of rules) {
       const minOk = rule.min === undefined || value >= rule.min;
       const maxOk = rule.max === undefined || value <= rule.max;
       if (minOk && maxOk) {
@@ -277,12 +333,12 @@ class StatsFormatter {
       lastDigit
     );
   }
-
   _getPrestigeTag(stars) {
     const prestige = Math.floor(stars / 100);
     let symbol = "✫";
     if (stars >= 1100 && stars < 2100) symbol = "✪";
-    if (stars >= 2100) symbol = "⚝";
+    if (stars >= 2100 && stars < 3100) symbol = "⚝";
+    if (stars >= 3100) symbol = "✥";
 
     if (prestige < 10) {
       const colors = [
@@ -390,13 +446,128 @@ class StatsFormatter {
           "§6",
           "§c",
         ])}${symbol}§4]`;
+      case 31:
+        return `§9[${this._formatMythicNumber(stars, [
+          "§9",
+          "§3",
+          "§6",
+        ])}${symbol}§e]`;
+      case 32:
+        return `§c[${this._formatMythicNumber(stars, [
+          "§4",
+          "§7",
+          "§4",
+        ])}§c${symbol}]`;
+      case 33:
+        return `§9[${this._formatMythicNumber(stars, [
+          "§9",
+          "§d",
+          "§c",
+        ])}${symbol}§4]`;
+      case 34:
+        return `§2[${this._formatMythicNumber(stars, [
+          "§a",
+          "§d",
+          "§5",
+        ])}${symbol}§2]`;
+      case 35:
+        return `§c[${this._formatMythicNumber(stars, [
+          "§c",
+          "§4",
+          "§2",
+        ])}§a${symbol}]`;
+      case 36:
+        return `§a[${this._formatMythicNumber(stars, [
+          "§a",
+          "§b",
+          "§9",
+        ])}${symbol}§1]`;
+      case 37:
+        return `§4[${this._formatMythicNumber(stars, [
+          "§4",
+          "§c",
+          "§b",
+        ])}§3${symbol}]`;
+      case 38:
+        return `§1[${this._formatMythicNumber(stars, [
+          "§1",
+          "§9",
+          "§5",
+        ])}§d${symbol}§1]`;
+      case 39:
+        return `§c[${this._formatMythicNumber(stars, [
+          "§c",
+          "§a",
+          "§3",
+        ])}§9${symbol}]`;
+      case 40:
+        return `§5[${this._formatMythicNumber(stars, [
+          "§5",
+          "§c",
+          "§6",
+        ])}${symbol}§e]`;
+      case 41:
+        return `§e[${this._formatMythicNumber(stars, [
+          "§e",
+          "§6",
+          "§c",
+        ])}§d${symbol}§5]`;
+      case 42: {
+        const s = stars.toString();
+        return `§1[§9${s[0]}§3${s[1]}§b${s[2]}§f${s[3]}§7${symbol}]`;
+      }
+      case 43:
+        return `§0[${this._formatMythicNumber(stars, [
+          "§5",
+          "§8",
+          "§5",
+        ])}${symbol}§0]`;
+      case 44: {
+        const s = stars.toString();
+        return `§2[${s[0]}§a${s[1]}§e${s[2]}§6${s[3]}§5${symbol}§d]`;
+      }
+      case 45:
+        return `§f[${this._formatMythicNumber(stars, [
+          "§f",
+          "§b",
+          "§3",
+        ])}${symbol}]`;
+      case 46:
+        return `§3[${this._formatMythicNumber(stars, [
+          "§b",
+          "§e",
+          "§6",
+        ])}§d${symbol}§5]`;
+      case 47:
+        return `§f[${this._formatMythicNumber(stars, [
+          "§4",
+          "§c",
+          "§9",
+        ])}§1${symbol}§9]`;
+      case 48: {
+        const s = stars.toString();
+        return `§5[${s[0]}§c${s[1]}§6${s[2]}§e${s[3]}§b${symbol}§3]`;
+      }
+      case 49:
+        return `§2[${this._formatMythicNumber(stars, [
+          "§a",
+          "§f",
+          "§a",
+        ])}${symbol}§2]`;
+      case 50:
+        return `§4[${this._formatMythicNumber(stars, [
+          "§4",
+          "§5",
+          "§9",
+        ])}§1${symbol}§0]`;
       default:
-        if (prestige > 30)
-          return `§e[${this._formatMythicNumber(stars, [
-            "§e",
-            "§6",
-            "§c",
-          ])}${symbol}§4]`;
+        if (prestige > 50) {
+          return `§4[${this._formatMythicNumber(stars, [
+            "§4",
+            "§5",
+            "§9",
+          ])}§1${symbol}§0]`;
+        }
         return `§f[${stars}${symbol}]`;
     }
   }
@@ -439,9 +610,9 @@ class StatsFormatter {
 
     return parts;
   }
-
-  formatStats(mode, playerName, stats, ping) {
+  formatStats(mode, playerName, stats, ping, options = {}) {
     const isTab = mode === "tab";
+    const includePrefix = options.includePrefix !== false;
     let playerDisplay = playerName;
 
     if (!isTab) {
@@ -455,7 +626,8 @@ class StatsFormatter {
       if (isTab) {
         return " §f| §cNicked";
       } else {
-        return this.api.getPrefix() + " " + playerDisplay + " §8- §cNicked";
+        const prefix = includePrefix ? this.api.getPrefix() + " " : "";
+        return prefix + playerDisplay + " §8- §cNicked";
       }
     }
 
@@ -465,21 +637,61 @@ class StatsFormatter {
       if (isTab) {
         return "";
       } else {
-        return this.api.getPrefix() + " §cYou have all stats disabled.";
+        const prefix = includePrefix ? this.api.getPrefix() + " " : "";
+        return prefix + "§cYou have all stats disabled.";
       }
     }
 
     if (isTab) {
       return " §f| " + parts.join(" §f| ");
     } else {
+      const prefix = includePrefix ? this.api.getPrefix() + " " : "";
       return (
-        this.api.getPrefix() +
-        " " +
+        prefix +
         playerDisplay +
         " §8- §7" +
         parts.join(" §8|§7 ")
       );
     }
+  }
+
+  /**
+   * Format in-game stats for tab display
+   * @param {Object} gameStats - { kills, deaths, finalKills, bedsBroken }
+   * @returns {string} Formatted stats string for tab suffix
+   */  formatGameStatsForTab(gameStats) {
+    if (!gameStats) {
+      return "";
+    }
+
+    const parts = [];
+    const config = this.api.config;
+
+    if (config.get("inGameTracker.tabShowKills") && gameStats.kills !== undefined) {
+      const color = this._applyGameStatColor("kills", gameStats.kills);
+      parts.push(`§7K: ${color}${gameStats.kills}`);
+    }
+
+    if (config.get("inGameTracker.tabShowDeaths") && gameStats.deaths !== undefined) {
+      // No colors for deaths - just gray
+      parts.push(`§7D: §7${gameStats.deaths}`);
+    }
+
+    if (config.get("inGameTracker.tabShowFinalKills") && gameStats.finalKills !== undefined) {
+      const color = this._applyGameStatColor("finalKills", gameStats.finalKills);
+      parts.push(`§7FK: ${color}${gameStats.finalKills}`);
+    }
+
+    if (config.get("inGameTracker.tabShowBedBreaks") && gameStats.bedsBroken !== undefined) {
+      const color = this._applyGameStatColor("bedBreaks", gameStats.bedsBroken);
+      parts.push(`§7BB: ${color}${gameStats.bedsBroken}`);
+    }
+
+    if (parts.length === 0) {
+      return "";
+    }
+
+    return " §f|  " + parts.join("  §8|  ");
   }
 }
 
