@@ -10,7 +10,7 @@ const pluginFullMetadata = {
   name: "bwu",
   displayName: "BedWars Utilities",
   prefix: "§6BWU",
-  version: "2.2.0",
+  version: "2.1.0",
   author: "Grille (silly_brazil), 3xyy",
   description:
     "A versatile Bedwars plugin offering a variety of useful features to enhance gameplay.",

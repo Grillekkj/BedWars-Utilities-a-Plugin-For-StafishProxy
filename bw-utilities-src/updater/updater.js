@@ -12,10 +12,10 @@ class Updater {
     };
 
     this.updateManager = new UpdateManager(metadata, log, logError, logDebug);
-  }
-  async checkForUpdates() {
-    if (globalThis.bwuUpdateChecked) return;
-    globalThis.bwuUpdateChecked = true;
+  }  async checkForUpdates() {
+    const checkedKey = `bwuUpdateChecked_${this.metadata.version}`;
+    if (globalThis[checkedKey]) return;
+    globalThis[checkedKey] = true;
     await this.updateManager.checkForNewVersion();
   }
 }
