@@ -1,3 +1,6 @@
+const path = require("node:path");
+const fs = require("node:fs");
+
 const TEAM_MAP = {
   R: { name: "Red", color: "§c" },
   B: { name: "Blue", color: "§9" },
@@ -17,6 +20,37 @@ class TeamRanking {
     this.api = api;
     this.apiService = apiService;
     this.bwu = bwuInstance;
+
+    // Sigmoid overrides are stored in a plain JSON file — bypasses Statisfy config.set/get entirely
+    const baseDir = process.pkg
+      ? path.dirname(process.execPath)
+      : path.join(__dirname, "..", "..", "..");
+    const dataDir = path.join(baseDir, "data");
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
+    }
+    this.sigmoidFilePath = path.join(dataDir, "bwu_sigmoid.json");
+  }
+
+  /** Read the sigmoid overrides file. Returns {} if missing or corrupt. */
+  _readSigmoidFile() {
+    try {
+      if (fs.existsSync(this.sigmoidFilePath)) {
+        return JSON.parse(fs.readFileSync(this.sigmoidFilePath, "utf8"));
+      }
+    } catch (e) {
+      this.api.debugLog(`[BWU] Error reading sigmoid file: ${e.message}`);
+    }
+    return {};
+  }
+
+  /** Write the full overrides object to the sigmoid file. */
+  _writeSigmoidFile(data) {
+    try {
+      fs.writeFileSync(this.sigmoidFilePath, JSON.stringify(data, null, 2), "utf8");
+    } catch (e) {
+      this.api.debugLog(`[BWU] Error writing sigmoid file: ${e.message}`);
+    }
   }
 
   _sendMessage(message) {
@@ -64,40 +98,132 @@ class TeamRanking {
    * @param {number} winstreak - Current winstreak
    * @param {number} stars - Star level (prestige)
    * @returns {number} Normalized threat score (0-100)
-   */
-  calculateThreatScore(fkdr, wlr, winstreak, stars) {
-    // Sigmoid normalization: converts unbounded metrics to 0-1 scale
-    // Formula: 1 / (1 + e^(-k * (x - midpoint)))
-    // This creates an S-curve where midpoint maps to 0.5
-    
-    // FKDR normalization (midpoint: 3.0, steepness: 0.8)
-    // Players with 3.0 FKDR are considered "average threat"
-    // 1.0 FKDR ≈ 0.13, 3.0 FKDR ≈ 0.50, 5.0 FKDR ≈ 0.84, 10.0 FKDR ≈ 0.99
+   */  calculateThreatScore(fkdr, wlr, winstreak, stars) {
     const normalizedFkdr = 1 / (1 + Math.exp(-0.8 * (fkdr - 3.0)));
-    
-    // WLR normalization (midpoint: 2.0, steepness: 1.0)
-    // Players with 2.0 WLR are considered "average threat"
-    // 0.5 WLR ≈ 0.18, 2.0 WLR ≈ 0.50, 4.0 WLR ≈ 0.88, 8.0 WLR ≈ 0.99
     const normalizedWlr = 1 / (1 + Math.exp(-1.0 * (wlr - 2.0)));
-    
-    // Winstreak normalization (midpoint: 3.0, steepness: 0.5)
-    // Players with 3 winstreak are considered "average threat"
-    // 0 WS ≈ 0.18, 3 WS ≈ 0.50, 6 WS ≈ 0.78, 10 WS ≈ 0.92, 15 WS ≈ 0.98
     const normalizedWinstreak = 1 / (1 + Math.exp(-0.5 * (winstreak - 3.0)));
-    
-    // Stars normalization (midpoint: 250, steepness: 0.01)
-    // Players with 250 stars are considered "average threat"
-    // 50✫ ≈ 0.12, 250✫ ≈ 0.50, 500✫ ≈ 0.92, 750✫ ≈ 0.99, 1000✫ ≈ 1.0
     const normalizedStars = 1 / (1 + Math.exp(-0.01 * (stars - 250)));
-    
-    // Apply weightage: 70% FKDR, 10% WLR, 15% Winstreak, 5% Stars
-    const weightedScore = 
+    const weightedScore =
       0.70 * normalizedFkdr +
       0.10 * normalizedWlr +
       0.15 * normalizedWinstreak +
       0.05 * normalizedStars;
-      // Convert to 0-100 scale for easier interpretation
     return weightedScore * 100;
+  }
+  /**
+   * Normalize a raw stat value to 0-1 using a sigmoid curve.
+   * midpoint = "average" player value, steepness controls how fast it rises.
+   */
+  _sigmoid(x, midpoint, steepness) {
+    return 1 / (1 + Math.exp(-steepness * (x - midpoint)));
+  }
+
+  /**
+   * Returns the hardcoded default sigmoid params for every variable.
+   */
+  getSigmoidDefaults() {
+    return {
+      fkdr:  { midpoint: 3.0,   steepness: 0.8   },
+      wlr:   { midpoint: 2.0,   steepness: 1.0   },
+      kdr:   { midpoint: 2.0,   steepness: 0.8   },
+      bblr:  { midpoint: 1.5,   steepness: 1.0   },
+      fk:    { midpoint: 500,   steepness: 0.005 },
+      fd:    { midpoint: 200,   steepness: 0.008 },
+      k:     { midpoint: 1000,  steepness: 0.003 },
+      d:     { midpoint: 500,   steepness: 0.005 },
+      bb:    { midpoint: 200,   steepness: 0.01  },
+      bl:    { midpoint: 100,   steepness: 0.015 },
+      w:     { midpoint: 200,   steepness: 0.008 },
+      l:     { midpoint: 100,   steepness: 0.015 },
+      stars: { midpoint: 250,   steepness: 0.01  },
+      ws:    { midpoint: 3.0,   steepness: 0.5   },
+    };
+  }
+
+  /**
+   * Get effective sigmoid params for a variable.
+   * Reads from bwu_sigmoid.json — bypasses Statisfy config entirely.
+   */
+  _getSigmoidParams(varName) {
+    const defaults = this.getSigmoidDefaults();
+    const base = defaults[varName];
+    if (!base) return null;
+    const overrides = this._readSigmoidFile();
+    const entry = overrides[varName];
+    if (
+      entry &&
+      typeof entry.midpoint === "number" && !isNaN(entry.midpoint) &&
+      typeof entry.steepness === "number" && !isNaN(entry.steepness)
+    ) {
+      return { midpoint: entry.midpoint, steepness: entry.steepness };
+    }
+    return base;
+  }
+
+  /**
+   * Build a normalized variable map (all values 0-1) from raw player stats.
+   * Fallback values are used for nicked players.
+   */
+  _normalizeStats(stats) {
+    const s = stats && !stats.isNicked ? stats : {};
+    const fkdr  = s.fkdr         ?? 5;
+    const wlr   = s.wlr          ?? 3;
+    const kdr   = s.kdr          ?? 3;
+    const bblr  = s.bblr         ?? 2;
+    const fk    = s.final_kills  ?? 500;
+    const fd    = s.final_deaths ?? 100;
+    const k     = s.kills        ?? 1000;
+    const d     = s.deaths       ?? 500;
+    const bb    = s.beds_broken  ?? 200;
+    const bl    = s.beds_lost    ?? 100;
+    const w     = s.wins         ?? 200;
+    const l     = s.losses       ?? 100;
+    const stars = s.stars        ?? 500;
+    const ws    = s.winstreak    ?? 5;
+
+    const p = (v) => this._getSigmoidParams(v);
+    return {
+      fkdr:  this._sigmoid(fkdr,  p("fkdr").midpoint,  p("fkdr").steepness),
+      wlr:   this._sigmoid(wlr,   p("wlr").midpoint,   p("wlr").steepness),
+      kdr:   this._sigmoid(kdr,   p("kdr").midpoint,   p("kdr").steepness),
+      bblr:  this._sigmoid(bblr,  p("bblr").midpoint,  p("bblr").steepness),
+      fk:    this._sigmoid(fk,    p("fk").midpoint,    p("fk").steepness),
+      fd:    this._sigmoid(fd,    p("fd").midpoint,    p("fd").steepness),
+      k:     this._sigmoid(k,     p("k").midpoint,     p("k").steepness),
+      d:     this._sigmoid(d,     p("d").midpoint,     p("d").steepness),
+      bb:    this._sigmoid(bb,    p("bb").midpoint,    p("bb").steepness),
+      bl:    this._sigmoid(bl,    p("bl").midpoint,    p("bl").steepness),
+      w:     this._sigmoid(w,     p("w").midpoint,     p("w").steepness),
+      l:     this._sigmoid(l,     p("l").midpoint,     p("l").steepness),
+      stars: this._sigmoid(stars, p("stars").midpoint, p("stars").steepness),
+      ws:    this._sigmoid(ws,    p("ws").midpoint,    p("ws").steepness),
+    };
+  }
+
+  /**
+   * Evaluate a user-defined equation string against a normalized variable map.
+   * Returns null if the equation is invalid/throws.
+   * Only allows: digits, whitespace, math operators, dots, parentheses, and whitelisted var names.
+   */
+  evaluateEquation(eqn, vars) {
+    // Whitelist: only safe characters + known variable names
+    const ALLOWED = /^[0-9\s+\-*/().]+$/;
+    // Replace variable names with their values first
+    const VARS = ['bblr','fkdr','kdr','wlr','stars','ws','fk','fd','bb','bl','k','d','w','l'];
+    let expr = eqn;
+    for (const v of VARS) {
+      expr = expr.replaceAll(v, String(vars[v]));
+    }
+    // After substitution, only numbers and operators should remain
+    if (!ALLOWED.test(expr)) return null;
+    try {
+      // eslint-disable-next-line no-new-func
+      const result = new Function(`"use strict"; return (${expr});`)();
+      if (typeof result !== "number" || !isFinite(result)) return null;
+      return result;
+    } catch {
+      return null;
+    }
   }
 
   async processAndDisplayRanking(playerNames, rankingSent) {
@@ -149,9 +275,7 @@ class TeamRanking {
         const isMyTeam = teamLetter === myTeamLetter;
         if (isMyTeam && !this.api.config.get("teamRanking.showYourTeam")) {
           return;
-        }
-
-        const realName =
+        }        const realName =
           this.bwu.resolvedNicks.get(playerName.toLowerCase()) || playerName;        const stats = await this.apiService.getPlayerStats(realName);
         const fkdr =
           stats && !stats.isNicked && stats.fkdr !== undefined ? stats.fkdr : 5;
@@ -166,9 +290,26 @@ class TeamRanking {
             ? stats.winstreak
             : 5;
 
-        const threat = this.calculateThreatScore(fkdr, wlr, winstreak, stars);
-
-        if (!teamsData[teamLetter]) {
+        // Use custom equation if set, otherwise use default sigmoid threat score
+        const customEqn = (this.api.config.get("teamRanking.rankEquation") || "").trim();
+        let threat;
+        if (customEqn) {
+          const vars = this._normalizeStats(stats);
+          const result = this.evaluateEquation(customEqn, vars);
+          if (result === null) {
+            // Invalid equation — notify once and fall back to default
+            if (!this._eqnErrorNotified) {
+              this._eqnErrorNotified = true;
+              this.api.chat(`${this.api.getPrefix()} §cRank equation failed! Using default. Check /bwu setrankeqn`);
+            }
+            threat = this.calculateThreatScore(fkdr, wlr, winstreak, stars);
+          } else {
+            this._eqnErrorNotified = false;
+            threat = result * 100; // scale to match default 0-100 range
+          }
+        } else {
+          threat = this.calculateThreatScore(fkdr, wlr, winstreak, stars);
+        }if (!teamsData[teamLetter]) {
           teamsData[teamLetter] = {
             totalFkdr: 0,
             totalStars: 0,
@@ -176,6 +317,7 @@ class TeamRanking {
             totalWinstreak: 0,
             totalThreat: 0,
             playerCount: 0,
+            playerNames: [],
             isMyTeam: isMyTeam,
           };
         }
@@ -185,6 +327,7 @@ class TeamRanking {
         teamsData[teamLetter].totalWinstreak += winstreak;
         teamsData[teamLetter].totalThreat += threat;
         teamsData[teamLetter].playerCount += 1;
+        teamsData[teamLetter].playerNames.push(playerName);
       })
     );
 
@@ -192,19 +335,13 @@ class TeamRanking {
     const isSolosMode = myTeamSize <= 1;
 
     return { teamsData, isSolosMode };
-  }
-  async displayRanking(teamsData, isSolosMode, rankingSent) {
+  }  async displayRanking(teamsData, isSolosMode, rankingSent) {
     if (rankingSent) return;
 
-    const useSeparateMessages = this.api.config.get(
-      "teamRanking.separateMessages"
-    );
-    const displayMode =
-      this.api.config.get("teamRanking.displayMode") || "total";
-    const maxTeams = this.api.config.get("teamRanking.maxTeams") || 3;
-    const showYourTeam = this.api.config.get("teamRanking.showYourTeam") || false;
+    const useSeparateMessages = this.api.config.get("teamRanking.separateMessages");
+    const displayMode = this.api.config.get("teamRanking.displayMode") || "total";
+    const maxTeams = this.api.config.get("teamRanking.maxTeams") || 3;    const showYourTeam = this.api.config.get("teamRanking.showYourTeam") || false;
 
-    // Separate enemy teams from your team
     const allTeams = Object.entries(teamsData)
       .map(([letter, data]) => ({
         letter,
@@ -215,61 +352,65 @@ class TeamRanking {
         totalWinstreak: data.totalWinstreak,
         totalThreat: data.totalThreat,
         playerCount: data.playerCount,
+        playerNames: data.playerNames || [],
         isMyTeam: data.isMyTeam || false,
-      }));
-
-    const enemyTeams = allTeams.filter(team => !team.isMyTeam).sort((a, b) => b.totalThreat - a.totalThreat);
+      }));    const enemyTeams = allTeams.filter(team => !team.isMyTeam).sort((a, b) => b.totalThreat - a.totalThreat);
     const myTeam = allTeams.find(team => team.isMyTeam);
 
     if (enemyTeams.length === 0) {
-      this.api.chat(
-        `${this.api.getPrefix()} §cUnable to calculate ranking (no enemy team found).`
-      );
+      this.api.chat(`${this.api.getPrefix()} §cUnable to calculate ranking (no enemy team found).`);
       return;
     }
 
-    // Limit enemy teams to maxTeams, but don't exceed actual number of teams
     const teamsToShow = enemyTeams.slice(0, Math.min(maxTeams, enemyTeams.length));
 
-    const rankingParts = teamsToShow.map((team, index) => {
-      const teamColor = TEAM_MAP[team.letter]?.color || "§7";
-      let statsDisplay;
+    // Build ranking with all teams (including yours) sorted by threat to get true rank positions
+    const allTeamsSorted = [...allTeams].sort((a, b) => b.totalThreat - a.totalThreat);
+
+    const formatTeamStats = (team) => {
       const count = Math.max(1, team.playerCount);
       if (displayMode === "avg") {
         const avgFkdr = (team.totalFkdr / count).toFixed(2);
         const avgStars = Math.round(team.totalStars / count);
-        statsDisplay = `${avgStars}✫ | ${avgFkdr} FKDR`;
+        return `${avgStars}✫ | ${avgFkdr} FKDR`;
       } else {
-        const totalStars = Math.round(team.totalStars);
-        statsDisplay = `${totalStars}✫ | ${team.totalFkdr.toFixed(2)} FKDR`;
+        return `${Math.round(team.totalStars)}✫ | ${team.totalFkdr.toFixed(2)} FKDR`;
       }
-      const teamInfo = `${index + 1}. ${teamColor}${team.name} §f(${statsDisplay})`;
-      return teamInfo;
-    });
+    };
 
-    // Add your team at the end if showYourTeam is enabled
-    if (showYourTeam && myTeam) {
-      const teamColor = TEAM_MAP[myTeam.letter]?.color || "§7";
-      let statsDisplay;
-      const count = Math.max(1, myTeam.playerCount);
-      if (displayMode === "avg") {
-        const avgFkdr = (myTeam.totalFkdr / count).toFixed(2);
-        const avgStars = Math.round(myTeam.totalStars / count);
-        statsDisplay = `${avgStars}✫ | ${avgFkdr} FKDR`;
+    // Build rankingParts, inserting [YOU] at its true rank position if showYourTeam is on
+    const rankingParts = [];
+    let enemiesAdded = 0;
+    let myTeamInserted = false;
+
+    for (let i = 0; i < allTeamsSorted.length; i++) {
+      const team = allTeamsSorted[i];
+      const trueRank = i + 1;
+
+      if (team.isMyTeam) {
+        if (showYourTeam && myTeam) {
+          const teamColor = TEAM_MAP[team.letter]?.color || "§7";
+          rankingParts.push(`§7[YOU #${trueRank}] ${teamColor}${team.name} §f(${formatTeamStats(team)})`);
+          myTeamInserted = true;
+        }
       } else {
-        const totalStars = Math.round(myTeam.totalStars);
-        statsDisplay = `${totalStars}✫ | ${myTeam.totalFkdr.toFixed(2)} FKDR`;
+        if (enemiesAdded < teamsToShow.length) {
+          const teamColor = TEAM_MAP[team.letter]?.color || "§7";
+          rankingParts.push(`${trueRank}. ${teamColor}${team.name} §f(${formatTeamStats(team)})`);
+          enemiesAdded++;
+        }
       }
-      const yourTeamInfo = `§7[YOU] ${teamColor}${myTeam.name} §f(${statsDisplay})`;
-      rankingParts.push(yourTeamInfo);
+
+      // Stop once we've shown all enemy teams and (if needed) your team
+      const doneEnemies = enemiesAdded >= teamsToShow.length;
+      const doneMyTeam = !showYourTeam || myTeamInserted;
+      if (doneEnemies && doneMyTeam) break;
     }
 
     if (useSeparateMessages) {
       let index = 0;
       for (const part of rankingParts) {
-        setTimeout(() => {
-          this._sendMessage(part);
-        }, index * 350);
+        setTimeout(() => { this._sendMessage(part); }, index * 350);
         index++;
       }
     } else {
@@ -278,8 +419,7 @@ class TeamRanking {
       if (rankingParts.length > 0) {
         this.sendRankingMessages(rankingParts);
       }
-    }
-  }
+    }  }
 
   sendRankingMessages(rankingParts) {
     const messagesToSend = [];
@@ -331,7 +471,7 @@ class TeamRanking {
    * @param {Array<string>} playerNames - List of all player names from /who
    * @param {Object} teamsData - Team data collected from collectTeamsData
    */  async displayFirstRushes(playerNames, teamsData) {
-    if (!this.api.config.get("teamRanking.firstRushes")) {
+    if (!this.api.config.get("teamRanking.firstRushesPlayerStats")) {
       return;
     }
     
@@ -383,35 +523,36 @@ class TeamRanking {
         .sort((a, b) => b.threat - a.threat);
       
       const ranking = allEnemyTeams.findIndex(t => t.letter === teamLetter) + 1;
-      
-      // Send header
+        // Send header
       const header = `${teamInfo.color}${teamInfo.name} ${ranking > 0 ? `§7(#${ranking})` : ''}§7:`;
       this._sendMessage(header);
       await new Promise((resolve) => setTimeout(resolve, MESSAGE_DELAY));
       
-      // Send each player's stats
-      for (const playerName of players) {
-        const realName = this.bwu.resolvedNicks.get(playerName.toLowerCase()) || playerName;
-        const stats = await this.apiService.getPlayerStats(realName);
-        
-        let ping = null;
-        if (this.api.config.get("stats.showPing.enabled")) {
-          const uuid = await this.apiService.getUuid(realName);
-          if (uuid) {
-            ping = await this.apiService.getPlayerPing(uuid);
+      // Send each player's stats only if firstRushesPlayerStats is enabled
+      if (this.api.config.get("teamRanking.firstRushesPlayerStats")) {
+        for (const playerName of players) {
+          const realName = this.bwu.resolvedNicks.get(playerName.toLowerCase()) || playerName;
+          const stats = await this.apiService.getPlayerStats(realName);
+          
+          let ping = null;
+          if (this.api.config.get("stats.showPing.enabled")) {
+            const uuid = await this.apiService.getUuid(realName);
+            if (uuid) {
+              ping = await this.apiService.getPlayerPing(uuid);
+            }
           }
+          
+          const message = this.bwu.statsFormatter.formatStats(
+            "chat",
+            playerName,
+            stats,
+            ping,
+            { includePrefix: false }
+          );
+          
+          this._sendMessage(`  ${message}`);
+          await new Promise((resolve) => setTimeout(resolve, MESSAGE_DELAY));
         }
-        
-        const message = this.bwu.statsFormatter.formatStats(
-          "chat",
-          playerName,
-          stats,
-          ping,
-          { includePrefix: false }
-        );
-        
-        this._sendMessage(`  ${message}`);
-        await new Promise((resolve) => setTimeout(resolve, MESSAGE_DELAY));
       }
     }
     

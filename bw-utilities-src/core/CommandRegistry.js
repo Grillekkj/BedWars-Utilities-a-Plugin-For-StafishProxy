@@ -157,12 +157,41 @@ class CommandRegistry {
           description: "Where to send (private, team, party). Default: private", 
           optional: true 
         })
-        .handler((ctx) => commandHandler.handleAllStatsCommand(ctx));
+        .handler((ctx) => commandHandler.handleAllStatsCommand(ctx));      registry
+        .command("setrankeqn")
+        .description("Set a custom ranking equation. Variables are normalized 0-1. Type 'reset' to restore default.")
+        .argument("[equation]", {
+          description: "Math equation using: fkdr wlr kdr bblr stars fk fd k d bb bl w l. Or 'reset'. Leave empty to view current.",
+          optional: true,
+          type: "greedy",
+        })
+        .handler((ctx) => commandHandler.handleRankEqnCommand(ctx));
+
+      registry
+        .command("setnormalizestat")
+        .description("View or customize sigmoid normalization for a ranking variable.")
+        .argument("[variable]", {
+          description: "Stat variable: fkdr wlr kdr bblr fk fd k d bb bl w l stars ws. Leave empty to show all.",
+          optional: true,
+        })
+        .argument("[midpoint]", {
+          description: "Raw value that maps to 0.5 score. Type 'reset' to restore default.",
+          optional: true,
+        })
+        .argument("[steepness]", {
+          description: "How sharply the curve rises (must be > 0).",
+          optional: true,
+        })
+        .handler((ctx) => commandHandler.handleSetNormalizeStatCommand(ctx));      registry
+        .command("rankscore")
+        .description("Calculates the ranking score for a player using the current equation.")
+        .argument("<username>", { description: "The player's username" })
+        .handler((ctx) => commandHandler.handleRankScoreCommand(ctx));
 
       registry
         .command("gamestats")
         .description("Shows real-time in-game statistics for the current match.")
-        .handler((ctx) => commandHandler.handleGameStatsCommand(ctx));      registry
+        .handler((ctx) => commandHandler.handleGameStatsCommand(ctx));registry
         .command("playerstats")
         .description("Shows in-game statistics for a specific player in the current match.")
         .argument("<player>", { description: "The player's username" })

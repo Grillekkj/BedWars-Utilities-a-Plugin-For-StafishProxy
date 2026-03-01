@@ -10,14 +10,11 @@ const pluginFullMetadata = {
   name: "bwu",
   displayName: "BedWars Utilities",
   prefix: "§6BWU",
-  version: "2.0.0",
-  author: "Grille (silly_brazil)",
+  version: "2.2.0",
+  author: "Grille (silly_brazil), 3xyy",
   description:
     "A versatile Bedwars plugin offering a variety of useful features to enhance gameplay.",
-  dependencies: [{ name: "denicker", minVersion: "1.1.0" }],
-  optionalDependencies: [{ name: "numdenicker", minVersion: "1.0.3" }],
-  // Not a proxy thing, dependency from this own plugin (adm-zip to autoupdater and might add more later)
-  requiredDependencies: ["adm-zip"],
+  dependencies: [{ name: "denicker", minVersion: "1.1.0" }],  optionalDependencies: [{ name: "numdenicker", minVersion: "1.0.3" }],
 };
 
 module.exports = function BedWarsUtilitiesPlugin(api) {
@@ -39,8 +36,7 @@ module.exports = function BedWarsUtilitiesPlugin(api) {
   api.metadata(metadataForAPI);
 
   try {
-    pluginFullMetadata.currentFileName = path.basename(__filename);
-    const updater = new Updater(api, pluginFullMetadata);
+    pluginFullMetadata.currentFileName = path.basename(__filename);    const updater = new Updater(api, pluginFullMetadata);
     updater.checkForUpdates();
   } catch (e) {
     console.error(`[BWU Updater] Failed to start: ${e.message}`);
