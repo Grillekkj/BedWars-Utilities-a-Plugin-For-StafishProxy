@@ -65,34 +65,89 @@ module.exports = [
         ],
       },
     ],
-  },  {
+  },
+  {
     label: "Team Ranking",
     description:
-      "Automatically ranks enemy teams by threat level (FKDR and Stars).",
-    defaults: {
+      "Automatically ranks enemy teams by threat level (FKDR and Stars).",    defaults: {
       teamRanking: {
         enabled: true,
-        separateMessages: false,
+        separateMessages: true,
         displayMode: "total",
-        sendType: "party",
-        maxTeams: 3,
-        showYourTeam: false,
-        firstRushes: true,
+        sendType: "private",
+        maxTeams: 4,
+        showYourTeam: true,
+        firstRushesPlayerStats: true,
+        rankEquation: "",
+        // Sigmoid normalization overrides (null = use hardcoded default)
+        sig_fkdr_mid:  null, sig_fkdr_steep:  null,
+        sig_wlr_mid:   null, sig_wlr_steep:   null,
+        sig_kdr_mid:   null, sig_kdr_steep:   null,
+        sig_bblr_mid:  null, sig_bblr_steep:  null,
+        sig_fk_mid:    null, sig_fk_steep:    null,
+        sig_fd_mid:    null, sig_fd_steep:    null,
+        sig_k_mid:     null, sig_k_steep:     null,
+        sig_d_mid:     null, sig_d_steep:     null,
+        sig_bb_mid:    null, sig_bb_steep:    null,
+        sig_bl_mid:    null, sig_bl_steep:    null,
+        sig_w_mid:     null, sig_w_steep:     null,
+        sig_l_mid:     null, sig_l_steep:     null,
+        sig_stars_mid: null, sig_stars_steep: null,
+        sig_ws_mid:    null, sig_ws_steep:    null,
       },
     },
     settings: [
       {
         key: "teamRanking.enabled",
-        type: "toggle",
-        text: ["OFF", "ON"],
+        type: "cycle",
         description: "Enable or disable automatic team ranking.",
+        values: [
+          { text: "Team Ranking: ON", value: true },
+          { text: "Team Ranking: OFF", value: false },
+        ],
       },
       {
-        key: "teamRanking.firstRushes",
-        type: "toggle",
-        text: ["OFF", "ON"],
-        description: "Show stats of neighboring teams at game start to help plan first rushes.",
+        key: "teamRanking.firstRushesPlayerStats",
+        type: "cycle",
+        description: "Show individual player stats for neighboring teams (first rushes) at game start. If OFF, neighboring team info is skipped entirely.",
+        values: [
+          { text: "First Rush Stats: ON", value: true },
+          { text: "First Rush Stats: OFF", value: false },
+        ],
+      },      {
+        key: "teamRanking.rankEquation",
+        type: "text",
+        description: "Custom ranking equation using normalized vars (0-1 scale): fkdr, wlr, kdr, bblr, fk, fd, k, d, bb, bl, w, l, stars, ws. Use /bwu setrankeqn to set. Empty = default sigmoid formula.",
       },
+      // Sigmoid normalization overrides — set via /bwu setnormalizestat
+      { key: "teamRanking.sig_fkdr_mid",  type: "text", description: "Sigmoid midpoint for fkdr (null = default 3.0)" },
+      { key: "teamRanking.sig_fkdr_steep", type: "text", description: "Sigmoid steepness for fkdr (null = default 0.8)" },
+      { key: "teamRanking.sig_wlr_mid",   type: "text", description: "Sigmoid midpoint for wlr (null = default 2.0)" },
+      { key: "teamRanking.sig_wlr_steep",  type: "text", description: "Sigmoid steepness for wlr (null = default 1.0)" },
+      { key: "teamRanking.sig_kdr_mid",   type: "text", description: "Sigmoid midpoint for kdr (null = default 2.0)" },
+      { key: "teamRanking.sig_kdr_steep",  type: "text", description: "Sigmoid steepness for kdr (null = default 0.8)" },
+      { key: "teamRanking.sig_bblr_mid",  type: "text", description: "Sigmoid midpoint for bblr (null = default 1.5)" },
+      { key: "teamRanking.sig_bblr_steep", type: "text", description: "Sigmoid steepness for bblr (null = default 1.0)" },
+      { key: "teamRanking.sig_fk_mid",    type: "text", description: "Sigmoid midpoint for fk (null = default 500)" },
+      { key: "teamRanking.sig_fk_steep",   type: "text", description: "Sigmoid steepness for fk (null = default 0.005)" },
+      { key: "teamRanking.sig_fd_mid",    type: "text", description: "Sigmoid midpoint for fd (null = default 200)" },
+      { key: "teamRanking.sig_fd_steep",   type: "text", description: "Sigmoid steepness for fd (null = default 0.008)" },
+      { key: "teamRanking.sig_k_mid",     type: "text", description: "Sigmoid midpoint for k (null = default 1000)" },
+      { key: "teamRanking.sig_k_steep",    type: "text", description: "Sigmoid steepness for k (null = default 0.003)" },
+      { key: "teamRanking.sig_d_mid",     type: "text", description: "Sigmoid midpoint for d (null = default 500)" },
+      { key: "teamRanking.sig_d_steep",    type: "text", description: "Sigmoid steepness for d (null = default 0.005)" },
+      { key: "teamRanking.sig_bb_mid",    type: "text", description: "Sigmoid midpoint for bb (null = default 200)" },
+      { key: "teamRanking.sig_bb_steep",   type: "text", description: "Sigmoid steepness for bb (null = default 0.01)" },
+      { key: "teamRanking.sig_bl_mid",    type: "text", description: "Sigmoid midpoint for bl (null = default 100)" },
+      { key: "teamRanking.sig_bl_steep",   type: "text", description: "Sigmoid steepness for bl (null = default 0.015)" },
+      { key: "teamRanking.sig_w_mid",     type: "text", description: "Sigmoid midpoint for w (null = default 200)" },
+      { key: "teamRanking.sig_w_steep",    type: "text", description: "Sigmoid steepness for w (null = default 0.008)" },
+      { key: "teamRanking.sig_l_mid",     type: "text", description: "Sigmoid midpoint for l (null = default 100)" },
+      { key: "teamRanking.sig_l_steep",    type: "text", description: "Sigmoid steepness for l (null = default 0.015)" },
+      { key: "teamRanking.sig_stars_mid", type: "text", description: "Sigmoid midpoint for stars (null = default 250)" },
+      { key: "teamRanking.sig_stars_steep", type: "text", description: "Sigmoid steepness for stars (null = default 0.01)" },
+      { key: "teamRanking.sig_ws_mid",    type: "text", description: "Sigmoid midpoint for ws (null = default 3.0)" },
+      { key: "teamRanking.sig_ws_steep",   type: "text", description: "Sigmoid steepness for ws (null = default 0.5)" },
       {
         key: "teamRanking.displayMode",
         type: "cycle",
@@ -260,6 +315,23 @@ module.exports = [
           { text: "Send in Chat: Party", value: "party" },
           { text: "Send in Chat: Private", value: "private" },
         ],
+      },
+    ],
+  },
+  {
+    label: "Auto Party & All Chat",
+    description: "Enable or disable automatic switching to party and all chat messages together.",
+    defaults: {
+      autoPartyAllChat: {
+        enabled: true,
+      },
+    },
+    settings: [
+      {
+        key: "autoPartyAllChat.enabled",
+        type: "toggle",
+        text: ["OFF", "ON"],
+        description: "Enable or disable automatic switching to party and all chat messages.",
       },
     ],
   },
@@ -958,7 +1030,8 @@ module.exports = [
           enabled: true,
           displayMode: "chat",
         },
-      },    },
+      },
+    },
     settings: [
       {
         key: "stats.showRank.enabled",
@@ -977,18 +1050,19 @@ module.exports = [
         ],
       },
     ],
-  },  {
+  },
+  {
     label: "In-Game Tracker",
     description: "Track real-time events during BedWars matches (beds, kills, deaths, final kills).",
     defaults: {
       inGameTracker: {
         enabled: true,
-        showNotifications: true,
-        notifyKills: true,
-        notifyDeaths: true,
-        notifyFinalKills: true,
-        notifyBedBreaks: true,
-        saveGameLogs: true,
+        showNotifications: false,
+        notifyKills: false,
+        notifyDeaths: false,
+        notifyFinalKills: false,
+        notifyBedBreaks: false,
+        saveGameLogs: false,
       },
     },
     settings: [
@@ -1056,7 +1130,8 @@ module.exports = [
         ],
       },
     ],
-  },{
+  },
+  {
     label: "In-Game Tracker - Tab Display",
     description: "Show real-time game stats in tab list. Alternates between regular stats and game stats.",
     defaults: {

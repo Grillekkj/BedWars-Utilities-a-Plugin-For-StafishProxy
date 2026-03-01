@@ -139,26 +139,33 @@ class ApiService {
       const data = await response.json();
       if (!data.success || !data.player) return { isNicked: true };
 
-      const rankDisplay = this._getRankDisplay(data.player);
-
-      const stats = data.player.stats?.Bedwars || {};
+      const rankDisplay = this._getRankDisplay(data.player);      const stats = data.player.stats?.Bedwars || {};
       const finalKills = stats.final_kills_bedwars || 0;
       const finalDeaths = stats.final_deaths_bedwars || 0;
       const wins = stats.wins_bedwars || 0;
       const losses = stats.losses_bedwars || 0;
+      const kills = stats.kills_bedwars || 0;
+      const deaths = stats.deaths_bedwars || 0;
+      const bedsBroken = stats.beds_broken_bedwars || 0;
+      const bedsLost = stats.beds_lost_bedwars || 0;
 
       const relevantStats = {
         rank: rankDisplay,
         isNicked: false,
         stars: data.player.achievements?.bedwars_level || 0,
         fkdr: finalKills / Math.max(1, finalDeaths),
+        kdr: kills / Math.max(1, deaths),
+        wlr: wins / Math.max(1, losses),
+        bblr: bedsBroken / Math.max(1, bedsLost),
         final_kills: finalKills,
         final_deaths: finalDeaths,
-        beds_broken: stats.beds_broken_bedwars || 0,
+        kills: kills,
+        deaths: deaths,
+        beds_broken: bedsBroken,
+        beds_lost: bedsLost,
         winstreak: stats.winstreak || 0,
         wins: wins,
         losses: losses,
-        wlr: wins / Math.max(1, losses),
       };
 
       this.cache.setPlayerStats(playerName, relevantStats);

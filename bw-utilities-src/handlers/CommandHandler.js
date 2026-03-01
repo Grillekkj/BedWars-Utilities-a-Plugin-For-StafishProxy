@@ -29,7 +29,7 @@ class CommandHandler {
 
     this.macrosFilePath = path.join(dataDir, "bwu_macros.json");
 
-    this.shoutCooldown = 65000;
+    this.shoutCooldown = 61000;
     this.lastShoutTime = 0;
     this.pendingShoutMessage = null;
     this.shoutTimer = null;
@@ -417,11 +417,10 @@ class CommandHandler {
   }  sendShoutWithCooldown(message) {
     const now = Date.now();
     const timeSinceLastShout = now - this.lastShoutTime;
-    const remainingCooldown = this.shoutCooldown - timeSinceLastShout;
-
-    if (timeSinceLastShout >= this.shoutCooldown) {
+    const remainingCooldown = this.shoutCooldown - timeSinceLastShout;    if (timeSinceLastShout >= this.shoutCooldown) {
       // Cooldown is over, send immediately
       this.bwu._bypassShoutInterception = true;
+      setTimeout(() => { this.bwu._bypassShoutInterception = false; }, 0);
       this.api.sendChatToServer(`/shout ${message}`);
       this.lastShoutTime = now;
       this.pendingShoutMessage = null;
@@ -439,9 +438,9 @@ class CommandHandler {
       }      // Use arrow function to preserve 'this' context
       this.api.debugLog(`[BWU] Queuing shout: "${message}", will send in ${remainingCooldown}ms`);
       this.shoutTimer = setTimeout(() => {
-        this.api.debugLog(`[BWU] Shout timer fired! Pending message: "${this.pendingShoutMessage}"`);
-        if (this.pendingShoutMessage) {
+        this.api.debugLog(`[BWU] Shout timer fired! Pending message: "${this.pendingShoutMessage}"`);        if (this.pendingShoutMessage) {
           this.bwu._bypassShoutInterception = true;
+          setTimeout(() => { this.bwu._bypassShoutInterception = false; }, 0);
           this.api.sendChatToServer(`/shout ${this.pendingShoutMessage}`);
           this.api.debugLog(`[BWU] Queued shout sent: "${this.pendingShoutMessage}"`);
           this.lastShoutTime = Date.now();
@@ -863,6 +862,171 @@ class CommandHandler {
     if (!rawPrefix) return null;
     const match = rawPrefix.match(/[A-Z]/);
     return match ? match[0] : null;
+  }  handleRankEqnCommand(ctx) {
+    const parts = ctx.args.equation;
+    const input = Array.isArray(parts) ? parts.join(" ").trim() : (parts || "").trim();
+    const teamRanking = this.bwu.teamRanking;
+
+    // No input — show current formula
+    if (!input) {
+      const current = (this.api.config.get("teamRanking.rankEquation") || "").trim();
+      if (current) {
+        this.api.chat(`${this.api.getPrefix()} §6Current rank equation: §f${current}`);
+      } else {
+        this.api.chat(`${this.api.getPrefix()} §7No custom equation set. Using §fdefault sigmoid formula§7.`);
+        this.api.chat(`${this.api.getPrefix()} §7Default: §f0.70*fkdr + 0.10*wlr + 0.15*ws + 0.05*stars §7(all normalized 0-1)`);
+      }
+      this.api.chat(`${this.api.getPrefix()} §7Usage: §f/bwu setrankeqn <equation> §7| Type §freset §7to restore default.`);
+      return;
+    }
+
+    if (input.toLowerCase() === "reset") {
+      this.api.config.set("teamRanking.rankEquation", "");
+      this.api.chat(`${this.api.getPrefix()} §aRank equation reset to default (sigmoid formula).`);
+      return;
+    }
+
+    // Test the equation with dummy normalized values (all 0.5)
+    const testVars = {
+      fkdr: 0.5, wlr: 0.5, kdr: 0.5, bblr: 0.5,
+      fk: 0.5, fd: 0.5, k: 0.5, d: 0.5,
+      bb: 0.5, bl: 0.5, w: 0.5, l: 0.5,
+      stars: 0.5, ws: 0.5,
+    };
+    const result = teamRanking.evaluateEquation(input, testVars);
+    if (result === null) {
+      this.api.chat(`${this.api.getPrefix()} §cInvalid equation!`);
+      this.api.chat(`${this.api.getPrefix()} §7Variables (all normalized 0-1): §ffkdr wlr kdr bblr stars ws fk fd k d bb bl w l`);
+      this.api.chat(`${this.api.getPrefix()} §7Usage: §f/bwu setrankeqn <equation>`);
+      return;
+    }
+
+    this.api.config.set("teamRanking.rankEquation", input);
+    this.api.chat(`${this.api.getPrefix()} §aRank equation set: §f${input}`);
+    this.api.chat(`${this.api.getPrefix()} §7Test result (all vars = 0.5): §e${result.toFixed(4)}`);
+  }  handleSetNormalizeStatCommand(ctx) {
+    const teamRanking = this.bwu.teamRanking;
+    const defaults = teamRanking.getSigmoidDefaults();
+    const VALID_VARS = Object.keys(defaults);    const varName      = ctx.args.variable?.toLowerCase();
+    const raw05        = ctx.args.midpoint;
+    const steepnessArg = ctx.args.steepness;
+
+    // Read sigmoid overrides from bwu_sigmoid.json — bypasses Statisfy config entirely
+    const overrides = teamRanking._readSigmoidFile();
+    const isCustom  = (v) => overrides[v] && typeof overrides[v].midpoint === "number" && typeof overrides[v].steepness === "number";
+    const getMid    = (v) => isCustom(v) ? overrides[v].midpoint  : defaults[v].midpoint;
+    const getSteep  = (v) => isCustom(v) ? overrides[v].steepness : defaults[v].steepness;
+
+    // No args — show all variables
+    if (!varName) {
+      this.api.chat(`${this.api.getPrefix()} §6§l═══ Normalization Settings ═══`);
+      for (const v of VALID_VARS) {
+        const base      = defaults[v];
+        const midpoint  = getMid(v);
+        const steepness = getSteep(v);
+        const tag       = isCustom(v) ? "§e(custom)" : "§7(default)";
+        this.api.chat(`  §f${v}§7: midpoint=§e${midpoint}§7, steepness=§e${steepness} ${tag}`);
+      }
+      this.api.chat(`${this.api.getPrefix()} §7Usage: §f/bwu setnormalizestat <var> [midpoint] [steepness]`);
+      this.api.chat(`${this.api.getPrefix()} §7Type §freset §7as midpoint to restore a variable's defaults.`);
+      return;
+    }
+
+    if (!VALID_VARS.includes(varName)) {
+      this.api.chat(`${this.api.getPrefix()} §cUnknown variable: §f${varName}`);
+      this.api.chat(`${this.api.getPrefix()} §7Valid: §f${VALID_VARS.join(", ")}`);
+      return;
+    }
+
+    // Variable only — show that variable's current settings
+    if (raw05 === undefined) {
+      const base      = defaults[varName];
+      const midpoint  = getMid(varName);
+      const steepness = getSteep(varName);
+      const tag       = isCustom(varName) ? "§e(custom)" : "§7(default)";
+      this.api.chat(`${this.api.getPrefix()} §f${varName}§7: midpoint=§e${midpoint}§7, steepness=§e${steepness} ${tag}`);
+      this.api.chat(`${this.api.getPrefix()} §7Default: midpoint=§f${base.midpoint}§7, steepness=§f${base.steepness}`);
+      return;
+    }    // Reset
+    if (String(raw05).toLowerCase() === "reset") {
+      delete overrides[varName];
+      teamRanking._writeSigmoidFile(overrides);
+      const base = defaults[varName];
+      this.api.chat(`${this.api.getPrefix()} §a${varName} reset to default: midpoint=§f${base.midpoint}§a, steepness=§f${base.steepness}`);
+      return;
+    }
+
+    // Set both values
+    const midpoint  = parseFloat(raw05);
+    const steepness = parseFloat(steepnessArg);
+
+    if (isNaN(midpoint) || isNaN(steepness)) {
+      this.api.chat(`${this.api.getPrefix()} §cBoth midpoint and steepness must be numbers.`);
+      this.api.chat(`${this.api.getPrefix()} §7Usage: §f/bwu setnormalizestat <var> <midpoint> <steepness>`);
+      return;
+    }
+    if (steepness <= 0) {
+      this.api.chat(`${this.api.getPrefix()} §cSteepness must be greater than 0.`);
+      return;
+    }
+
+    // Write to file as proper numbers
+    overrides[varName] = { midpoint, steepness };
+    teamRanking._writeSigmoidFile(overrides);
+    this.api.chat(`${this.api.getPrefix()} §a${varName} updated: midpoint=§f${midpoint}§a, steepness=§f${steepness}`);
+  }
+  async handleRankScoreCommand(ctx) {
+    const username = ctx.args.username?.trim();
+    if (!username) {
+      this.api.chat(`${this.api.getPrefix()} §cUsage: /bwu rankscore <username>`);
+      return;
+    }
+
+    this.api.chat(`${this.api.getPrefix()} §eFetching stats for §f${username}§e...`);
+
+    const teamRanking = this.bwu.teamRanking;
+    const stats = await this.apiService.getPlayerStats(username);
+
+    if (!stats) {
+      this.api.chat(`${this.api.getPrefix()} §cFailed to fetch stats for §f${username}§c.`);
+      return;
+    }
+
+    const isNicked = stats.isNicked === true;
+    const vars = teamRanking._normalizeStats(stats);
+
+    const customEqn = (this.api.config.get("teamRanking.rankEquation") || "").trim();
+    let score;
+    let usingCustom = false;
+
+    if (customEqn) {
+      const result = teamRanking.evaluateEquation(customEqn, vars);
+      if (result === null) {
+        this.api.chat(`${this.api.getPrefix()} §cCustom equation is invalid! Falling back to default.`);
+        score = teamRanking.calculateThreatScore(
+          stats.fkdr ?? 5, stats.wlr ?? 3, stats.winstreak ?? 5, stats.stars ?? 500
+        );
+      } else {
+        score = result * 100;
+        usingCustom = true;
+      }
+    } else {
+      score = teamRanking.calculateThreatScore(
+        stats.fkdr ?? 5, stats.wlr ?? 3, stats.winstreak ?? 5, stats.stars ?? 500
+      );
+    }
+
+    const nickedTag = isNicked ? " §c(nicked — using fallback values)" : "";
+    const eqnTag = usingCustom ? "§7(custom eqn)" : "§7(default sigmoid)";
+
+    this.api.chat(`${this.api.getPrefix()} §6Rank score for §f${username}§6:${nickedTag}`);
+    this.api.chat(`  §eScore: §f${score.toFixed(2)} ${eqnTag}`);
+
+    if (!isNicked) {
+      // Show the normalized variable values used
+      this.api.chat(`  §7Normalized vars: §ffkdr=${vars.fkdr.toFixed(3)} §7wlr=${vars.wlr.toFixed(3)} §7ws=${vars.ws.toFixed(3)} §7stars=${vars.stars.toFixed(3)}`);
+      this.api.chat(`  §7Raw: §ffkdr=${stats.fkdr ?? "?"} §7wlr=${stats.wlr ?? "?"} §7ws=${stats.winstreak ?? "?"} §7stars=${stats.stars ?? "?"}`);
+    }
   }
 
   handleGameStatsCommand(ctx) {
